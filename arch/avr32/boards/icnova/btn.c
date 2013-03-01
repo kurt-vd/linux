@@ -26,7 +26,7 @@ static struct gpio_keys_button icnova_buttons_btn[] = {
 
 static struct gpio_keys_platform_data icnova_buttons_data = {
 	.buttons = icnova_buttons_btn,
-	.nbuttons = 1,
+	.nbuttons = ARRAY_SIZE(icnova_buttons_btn),
 };
 
 static struct platform_device icnova_buttons = {
