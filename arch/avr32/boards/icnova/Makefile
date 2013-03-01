@@ -1,5 +1,6 @@
 obj-$(CONFIG_BOARD_ICNOVA)		+= icnova.o
 obj-$(CONFIG_BOARD_ICNOVA_BASE)		+= icnova_base.o flash.o
+obj-$(CONFIG_BOARD_LINUMATIC)		+= linumatic.o flash.o
 obj-$(CONFIG_BOARD_ICNOVA_FULL)		+= icnova_full.o flash.o
 obj-$(CONFIG_BOARD_ICNOVA_OEMBASED)	+= icnova_oem.o flash.o
 obj-$(CONFIG_BOARD_ICNOVA_OEMPLUSBASED)	+= icnova_oem.o icnova_oem_plus.o nand.o # mx29lv040.o
