@@ -18,7 +18,7 @@ static struct gpio_keys_button icnova_buttons_btn[] = {
 	{
 		.gpio = GPIO_PIN_PA(31),
 		.code = BTN_0,
-		.desc = "Button 0",
+		.desc = "SW1",
 		.active_low = 1,
 		.type = EV_KEY,
 	},
