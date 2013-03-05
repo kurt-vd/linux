@@ -257,6 +257,14 @@ config SENSORS_ASC7621
 	  This driver can also be built as a module.  If so, the module
 	  will be called asc7621.
 
+config SENSORS_ATM_PWM
+        tristate "Atmel PWM"
+        depends on ATMEL_PWM
+        help
+	  This is some kind of userspace-interface for the PWMs found in some
+	  Atmel Processors (like AP7000)
+	  Your Board-Code must set the needed Pins to be PWM!
+
 config SENSORS_K8TEMP
 	tristate "AMD Athlon64/FX or Opteron temperature sensor"
 	depends on X86 && PCI
