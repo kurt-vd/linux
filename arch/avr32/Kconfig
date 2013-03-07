@@ -154,6 +154,10 @@ config BOARD_MERISC
 
 	  For more information see: http://www.martinsson.se/merisc
 
+config BOARD_ICNOVA
+	bool "In-Circuit ICnova based board"
+	select CPU_AT32AP7000
+
 config BOARD_MIMC200
 	bool "MIMC200 CPU board"
 	select CPU_AT32AP7000
@@ -164,6 +168,7 @@ source "arch/avr32/boards/atngw100/Kconfig"
 source "arch/avr32/boards/hammerhead/Kconfig"
 source "arch/avr32/boards/favr-32/Kconfig"
 source "arch/avr32/boards/merisc/Kconfig"
+source "arch/avr32/boards/icnova/Kconfig"
 
 choice
 	prompt "Boot loader type"

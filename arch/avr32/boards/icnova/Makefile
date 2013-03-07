@@ -1,0 +1,17 @@
+obj-$(CONFIG_BOARD_ICNOVA)		+= icnova.o
+obj-$(CONFIG_BOARD_ICNOVA_BASE)		+= icnova_base.o flash.o
+obj-$(CONFIG_BOARD_ICNOVA_FULL)		+= icnova_full.o flash.o
+obj-$(CONFIG_BOARD_ICNOVA_OEMBASED)	+= icnova_oem.o flash.o
+obj-$(CONFIG_BOARD_ICNOVA_OEMPLUSBASED)	+= icnova_oem.o icnova_oem_plus.o nand.o # mx29lv040.o
+
+obj-$(CONFIG_BOARD_ICNOVA_DEV_VGA)	+= vga.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_LED)	+= led.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_BTN)	+= btn.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_MAC)	+= mac.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_SPI)	+= spi.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_I2C)	+= i2c.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_MMC)	+= mmc.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_IRDA)	+= irda.o
+obj-$(CONFIG_BOARD_ICNOVA_USB_ISP1761)	+= usb.o
+obj-$(CONFIG_BOARD_ICNOVA_AC97)		+= ac97.o
+obj-$(CONFIG_BOARD_ICNOVA_PWM)          += pwm.o

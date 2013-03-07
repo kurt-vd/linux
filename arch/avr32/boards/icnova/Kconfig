@@ -1,0 +1,411 @@
+# icnova customization
+if BOARD_ICNOVA
+
+
+config BOARD_ICNOVA_DEV_VGA
+	def_bool n
+#	select FB_MODE_HELPERS
+
+config BOARD_ICNOVA_DEV_SPI
+	def_bool n
+
+config BOARD_ICNOVA_DEV_I2C
+	def_bool n
+
+config BOARD_ICNOVA_DEV_IRDA
+	def_bool n
+
+config BOARD_ICNOVA_DEV_USBH
+	def_bool n
+
+config BOARD_ICNOVA_FULL
+	def_bool n
+	select BOARD_ICNOVA_DEV_LED
+	select BOARD_ICNOVA_DEV_MAC
+	select BOARD_ICNOVA_DEV_BTN
+	select BOARD_ICNOVA_DEV_MMC
+	select BOARD_ICNOVA_DEV_IRDA
+	select BOARD_ICNOVA_DEV_USBH
+
+config BOARD_ICNOVA_OEMBASED
+	def_bool n
+
+config BOARD_ICNOVA_OEMPLUSBASED
+	def_bool n
+	select BOARD_ICNOVA_DEV_USBH
+
+config BOARD_ICNOVA_ADB1000
+	def_bool n
+
+config BOARD_ICNOVA_ADB1001
+	def_bool n
+
+choice
+	prompt "ICnova option"
+	depends on BOARD_ICNOVA
+	default BOARD_ICNOVA_FULL
+
+config BOARD_ICNOVA_NONE
+	bool "ICnova AP7000 without LCD nor 2nd MAC"
+	select BOARD_ICNOVA_FULL
+
+config BOARD_ICNOVA_LCDC
+	bool "ICnova AP7000 with LCD-Controller"
+	select BOARD_ICNOVA_FULL
+	select BOARD_ICNOVA_DEV_VGA
+
+config BOARD_ICNOVA_MACB
+	bool "ICnova AP7000 with 2nd Ethernet-MAC"
+	select BOARD_ICNOVA_FULL
+	select BOARD_ICNOVA_DEV_MACB
+
+config BOARD_ICNOVA_BASE
+	bool "ICnova AP7000 Base"
+	select BOARD_ICNOVA_DEV_LED
+	select BOARD_ICNOVA_DEV_BTN
+	select BOARD_ICNOVA_DEV_MAC
+
+config BOARD_ICNOVA_OEM
+	bool "ICnova AP7000 OEM"
+	select BOARD_ICNOVA_OEMBASED
+
+config BOARD_ICNOVA_OEMPLUS
+	bool "ICnova AP7000 OEM Plus"
+	select BOARD_ICNOVA_OEMPLUSBASED
+
+config BOARD_ICNOVA_ADB1000_OEM
+	bool "ICnova ADB1000"
+	select BOARD_ICNOVA_OEMBASED
+	select BOARD_ICNOVA_ADB1000
+	select BOARD_ICNOVA_DEV_LED
+	select BOARD_ICNOVA_DEV_MAC
+	select BOARD_ICNOVA_DEV_MMC
+	select BOARD_ICNOVA_I2C_M41T82
+	select BOARD_ICNOVA_ADS7846
+
+config BOARD_ICNOVA_ADB1000_OEMPLUS
+	bool "ICnova ADB1000plus"
+	select BOARD_ICNOVA_OEMPLUSBASED
+	select BOARD_ICNOVA_ADB1000
+	select BOARD_ICNOVA_DEV_LED
+	select BOARD_ICNOVA_DEV_MAC
+	select BOARD_ICNOVA_DEV_MMC
+	select BOARD_ICNOVA_I2C_M41T82
+	select BOARD_ICNOVA_ADS7846
+
+config BOARD_ICNOVA_ADB1001_OEM
+	bool "ICnova ADB1001"
+	select BOARD_ICNOVA_ADB1001
+	select BOARD_ICNOVA_OEMBASED
+	select BOARD_ICNOVA_DEV_LED
+	select BOARD_ICNOVA_DEV_MMC
+	select BOARD_ICNOVA_DEM_MAC
+	select BOARD_ICNOVA_I2C_M41T82
+	select BOARD_ICNOVA_DEV_MACB
+
+config BOARD_ICNOVA_ADB1001_OEMPLUS
+	bool "ICnova ADB1001plus"
+	select BOARD_ICNOVA_ADB1001
+	select BOARD_ICNOVA_OEMPLUSBASED
+	select BOARD_ICNOVA_DEV_LED
+	select BOARD_ICNOVA_DEV_MMC
+	select BOARD_ICNOVA_DEM_MAC
+	select BOARD_ICNOVA_I2C_M41T82
+	select BOARD_ICNOVA_DEV_MACB
+
+endchoice
+
+config BOARD_ICNOVA_BASE_CP2102
+	bool "ICnova Base has CP2102"
+	depends on BOARD_ICNOVA_BASE
+
+config BOARD_ICNOVA_OEM_DEFCON
+	int "default UART for console"
+	depends on BOARD_ICNOVA_OEMBASED || BOARD_ICNOVA_OEMPLUSBASED
+	default 0
+	help
+	  This sets which UART is used to display the default console (the
+	  kernelmessages on boottime for example)
+
+config BOARD_ICNOVA_DEV_MMC
+	bool "Board has SD/MMC-Interface"
+	help
+	  If you have an MMC/SD-Card-Connector connected to the right pins of
+	  the OEM-Board, you can use it via selecting this.
+
+config BOARD_ICNOVA_DEV_LED
+	bool "Board has (configured) LEDs"
+	help
+	  If you have LEDs on your board connected via GPIO-Pins select this
+	  and configure your buttons in arch/avr32/boards/icnova/led.c
+
+config BOARD_ICNOVA_DEV_BTN
+	bool "Board has (configured) Button(s)"
+	help
+	  If you have buttons on your board, you want to use as generic
+	  keyboard, select this and configure your buttons in
+	  arch/avr32/boards/icnova/btn.c
+
+config BOARD_ICNOVA_DEV_MAC
+	bool "Board has an Ethernet Interface"
+	help
+	  select this if you have connected an Ethernet PHY (eg. a DM9161)
+	  to your board.
+
+config BOARD_ICNOVA_DEV_MACB
+	bool "Board uses both Ethernet Interfaces"
+	depends on BOARD_ICNOVA_DEV_MAC && ! BOARD_ICNOVA_DEV_VGA
+	help
+	  select this if you have Ethernet PHYs on both Interfaces.
+
+menuconfig BOARD_ICNOVA_SINGLE_MODE_TFT
+	bool "Support a TFT-Display"
+	default n
+	depends on BOARD_ICNOVA_BASE || BOARD_ICNOVA_OEMBASED || BOARD_ICNOVA_OEMPLUSBASED
+	select BOARD_ICNOVA_DEV_VGA
+	help
+	  Select this if you plan to connect an active TFT to the Pins of
+	  the board.
+	  In the menu you'll find the parameters, needed to drive your panel.
+
+
+if BOARD_ICNOVA_SINGLE_MODE_TFT
+
+config BOARD_ICNOVA_CLK_INVERTED
+	def_bool n
+
+config BOARD_ICNOVA_CLK_ALWAYSACTIVE
+	def_bool n
+
+config BOARD_ICNOVA_DVAL_INVERTED
+	def_bool n
+
+config BOARD_ICNOVA_VGA_PRESET
+	def_bool n
+
+config BOARD_ICNOVA_VGA_ET035009DH6
+	bool "ET035009DH6 support"
+	select BOARD_ICNOVA_CLK_INVERTED
+	select BOARD_ICNOVA_CLK_ALWAYSACTIVE
+	select BOARD_ICNOVA_DVAL_INVERTED
+	select BOARD_ICNOVA_LCDCONISBL
+	select BOARD_ICNOVA_VGA_PRESET
+	default n
+	help
+	  If you have such an Display connected to the LCDC, say y here and
+	  everything will be configured correctly. Otherwise say n and choose
+	  your parameters manually
+
+config BOARD_ICNOVA_VGA_ET050000DH6
+	bool "ET050000DH6 support"
+	select BOARD_ICNOVA_CLK_INVERTED
+	select BOARD_ICNOVA_CLK_ALWAYSACTIVE
+	select BOARD_ICNOVA_DVAL_INVERTED
+	select BOARD_ICNOVA_LCDCONISBL
+	select BOARD_ICNOVA_VGA_PRESET
+	default n
+	help
+	  If you have such an Display connected to the LCDC, say y here and
+	  everything will be configured correctly. Otherwise say n and choose
+	  your parameters manually
+
+if !BOARD_ICNOVA_VGA_PRESET
+
+config BOARD_ICNOVA_VGA_XRES
+	int "X-Resolution"
+	default 320
+
+config BOARD_ICNOVA_VGA_YRES
+	int "Y-Resolution"
+	default 240
+
+config BOARD_ICNOVA_VGA_VHZ
+	int "refresh in Hz"
+	default 50
+
+config BOARD_ICNOVA_VGA_PIXCLK
+	int "pixclk"
+	default 30000
+
+config BOARD_ICNOVA_VGA_LMARG
+	int "left margin"
+	default 10
+
+config BOARD_ICNOVA_VGA_RMARG
+	int "right margin"
+	default 2
+
+config BOARD_ICNOVA_VGA_TMARG
+	int "upper margin"
+	default 5
+
+config BOARD_ICNOVA_VGA_BMARG
+	int "lower margin"
+	default 3
+
+config BOARD_ICNOVA_VGA_HSYNC
+	int "hsync length"
+	default 24
+
+config BOARD_ICNOVA_VGA_VSYNC
+	int "vsync length"
+	default 2
+
+config BOARD_ICNOVA_VGA_SYNCH
+	bool "Sync on horizontal high"
+	default y
+
+config BOARD_ICNOVA_VGA_SYNCV
+	bool "Sync on vertical high"
+	default n
+
+config BOARD_ICNOVA_VGA_SYNCE
+	bool "Sync on external line"
+	default n
+
+config BOARD_ICNOVA_VGA_SYNCC
+	bool "Sync on composite high"
+	default n
+
+config BOARD_ICNOVA_VGA_SYNCB
+	bool "Sync on broadcast"
+	default n
+
+config BOARD_ICNOVA_VGA_SYNCG
+	bool "Sync on green"
+	default n
+
+config BOARD_ICNOVA_VGA_INTERLACED
+	bool "interlaced"
+	default n
+
+config BOARD_ICNOVA_VGA_VESA
+	bool "mode is VESA-mode"
+	default n
+
+config BOARD_ICNOVA_CLK_INVERTED_USR
+	select BOARD_ICNOVA_CLK_INVERTED
+	bool "Clock-Signal is inverted"
+	default n
+
+config BOARD_ICNOVA_CLK_ALWAYSACTIVE_USR
+	select BOARD_ICNOVA_CLK_ALWAYSACTIVE
+	bool "Clock is always active"
+	default n
+
+config BOARD_ICNOVA_DVAL_INVERTED_USR
+	select BOARD_ICNOVA_DVAL_INVERTED
+	bool "DVal-Signal is inverted"
+	default n
+
+endif
+
+config BOARD_ICNOVA_LCDCONISBL
+	bool "LCD Contrast is Backlight-PWM"
+	default n
+
+endif
+
+menuconfig BOARD_ICNOVA_ADS7846
+	bool "ADS7846 on ICnova"
+	depends on TOUCHSCREEN_ADS7846
+	select BOARD_ICNOVA_DEV_SPI
+
+if BOARD_ICNOVA_ADS7846
+
+config BOARD_ICNOVA_ADS7846_CS
+	int "Chip-Select"
+	default 2 if BOARD_ICNOVA_ADB
+	default 0
+	help
+	  which Chipselect-line selects the ADS7846
+
+config BOARD_ICNOVA_ADS7846_IRQ
+	int "IRQ on GPIO-Pin"
+	default 48 if BOARD_ICNOVA_ADB
+	default 0
+	help
+	  which IRQ-Line to use
+	  To compute this value use Port * 32 + Pin. Port might be
+	  0 (for Port A) to 3 (for Port D).
+	  To use Eg. Pin 10 on Port B, use 42 here (1 * 32 + 10)
+
+endif
+
+config BOARD_ICNOVA_SPI_M25P80
+	bool "Standard SPI-Flash"
+	select BOARD_ICNOVA_DEV_SPI
+	help
+	  If you have an standard SPI-Flash (an chip supported by the
+	  M25P80-Driver) you sould say 'Y' here.
+
+config BOARD_ICNOVA_SPI_M25P80_CS
+	int "Card-select for the SPI-Flash"
+	default 0
+	depends on BOARD_ICNOVA_SPI_M25P80
+	help
+	  Please configure to which Card-select the SPI-Flash is connected
+
+menuconfig BOARD_ICNOVA_ZADCS1282
+	bool "ZMD ZADCS1282"
+	default n
+	select BOARD_ICNOVA_DEV_SPI
+
+if BOARD_ICNOVA_ZADCS1282
+
+config BOARD_ICNOVA_ZADCS1282_CS
+	int "Card-select for AD-Converter"
+	default 0
+
+config BOARD_ICNOVA_ZADCS1282_SHDN
+	int "GPIO-Pin for Shutdown"
+	default 0
+
+endif
+
+
+config BOARD_ICNOVA_I2C_M41T82
+	bool "M41T82-RTC can be found on the I2C-Interface"
+	select BOARD_ICNOVA_DEV_I2C
+	help
+	  If you have an M41T82-RTC connected to the ICnova via the
+	  I2C/TWI-Interface, choose 'Y'. It doesn't hurt otherwise.
+	  Please also select the driver in the RTC-Menu
+
+config BOARD_ICNOVA_USB_ISP1761
+	bool "ISP1761 Host-Controller"
+	depends on BOARD_ICNOVA_DEV_USBH
+	default y
+	help
+	  This adds support for the USB-Host-Controller
+
+config BOARD_ICNOVA_AC97
+	bool "AC97c-Support"
+	depends on !BOARD_ICNOVA_BASE
+	default n
+
+
+config BOARD_ICNOVA_AC97_RESET
+	int "AC97 Reset Pin"
+	depends on BOARD_ICNOVA_AC97
+
+config BOARD_ICNOVA_PWM
+	bool "Use PWM-Pins"
+
+if BOARD_ICNOVA_PWM
+
+config BOARD_ICNOVA_PWM0
+	bool "Use PWM0"
+
+config BOARD_ICNOVA_PWM1
+	bool "Use PWM1"
+
+config BOARD_ICNOVA_PWM2
+	bool "Use PWM2"
+
+config BOARD_ICNOVA_PWM3
+	bool "Use PWM3"
+
+endif
+
+endif
