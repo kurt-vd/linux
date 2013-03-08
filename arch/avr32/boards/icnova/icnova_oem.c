@@ -13,10 +13,10 @@
 
 void __init setup_board(void)
 {
-	at32_map_usart(0, 0);	// USART 0: /dev/ttyS0
-	at32_map_usart(1, 1);	// USART 1: /dev/ttyS1
-	at32_map_usart(2, 2);	// USART 2: /dev/ttyS2
-	at32_map_usart(3, 3);	// USART 3: /dev/ttyS3
+	at32_map_usart(0, 0, 0);	// USART 0: /dev/ttyS0
+	at32_map_usart(1, 1, 0);	// USART 1: /dev/ttyS1
+	at32_map_usart(2, 2, 0);	// USART 2: /dev/ttyS2
+	at32_map_usart(3, 3, 0);	// USART 3: /dev/ttyS3
 
 	at32_setup_serial_console(CONFIG_BOARD_ICNOVA_OEM_DEFCON);
 }

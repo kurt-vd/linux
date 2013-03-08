@@ -11,9 +11,9 @@
 
 void __init setup_board(void)
 {
-	at32_map_usart(1, 0);	// USART 1: /dev/ttyS0, DB/IF-to-USB_UART-BRIDGE
-	at32_map_usart(0, 1);	// USART 0: /dev/ttyS1, RF-Connector
-	at32_map_usart(3, 2);	// USART 3: /dev/ttyS2, IR
+	at32_map_usart(1, 0, 0);	// USART 1: /dev/ttyS0, DB/IF-to-USB_UART-BRIDGE
+	at32_map_usart(0, 1, 0);	// USART 0: /dev/ttyS1, RF-Connector
+	at32_map_usart(3, 2, 0);	// USART 3: /dev/ttyS2, IR
 	// USART2 -> Ext IRQs
 
 	at32_setup_serial_console(0);

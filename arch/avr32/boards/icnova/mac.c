@@ -14,14 +14,12 @@ struct eth_addr {
 };
 
 static struct eth_addr __initdata hw_addr[2];
-struct eth_platform_data __initdata eth_data[] = {
+struct macb_platform_data __initdata eth_data[] = {
 	{
-		.irq 		= 67,
 		.phy_mask	= ~(1U << 0),
 	},
 #ifdef CONFIG_BOARD_ICNOVA_DEV_MACB
 	{
-		.irq 		= 67,
 		.phy_mask	= ~(1U << 0),
 	},
 #endif

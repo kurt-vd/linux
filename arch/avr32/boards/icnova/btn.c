@@ -5,6 +5,7 @@
  * (C) 2007 Benjamin Tietz <benjamin@micronet24.de>
  */
 
+#include <linux/types.h>
 #include <linux/gpio_keys.h>
 #include <linux/input.h>
 #include <linux/platform_device.h>

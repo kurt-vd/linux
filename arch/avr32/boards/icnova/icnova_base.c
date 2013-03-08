@@ -14,10 +14,10 @@
 void __init setup_board(void)
 {
 #ifdef CONFIG_BOARD_ICNOVA_BASE_CP2102
-	at32_map_usart(0, 1);	// USART 0: /dev/ttyS1, IF-to-USB-UART_Bridge
-	at32_map_usart(1, 0);	// USART 1: /dev/ttyS0, CP2102
+	at32_map_usart(0, 1, 0);	// USART 0: /dev/ttyS1, IF-to-USB-UART_Bridge
+	at32_map_usart(1, 0, 0);	// USART 1: /dev/ttyS0, CP2102
 #else
-	at32_map_usart(0, 0);	// USART 0: /dev/ttyS0, IF-to-USB-UART_Bridge
+	at32_map_usart(0, 0, 0);	// USART 0: /dev/ttyS0, IF-to-USB-UART_Bridge
 #endif
 
 	at32_setup_serial_console(0);

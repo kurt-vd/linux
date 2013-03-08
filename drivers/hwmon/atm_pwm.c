@@ -24,7 +24,7 @@
 
 struct atmel_pwm_hwmon {
 	unsigned int		pwm_channel;
-	struct hwmon_device	*hwdev;
+	struct device		*hwdev;
 	struct platform_device	*pdev;
 	struct pwm_channel	pwmc[ATMEL_PWM_NCHN];
 	struct device		dev;
