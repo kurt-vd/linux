@@ -45,6 +45,9 @@
 
 #define PCF8563_SC_LV		0x80 /* low voltage */
 #define PCF8563_MO_C		0x80 /* century */
+#define PCF8563_ST2_AIEN	0x02
+#define PCF8563_ST2_AF		0x08
+#define PCF8563_AEN		0x80 /* per-item alarm enable */
 
 static struct i2c_driver pcf8563_driver;
 
@@ -234,10 +237,106 @@ static int pcf8563_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	return pcf8563_set_datetime(to_i2c_client(dev), tm);
 }
 
+static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+{
+	struct i2c_client *i2c = to_i2c_client(dev);
+	int ret;
+	struct rtc_time tm;
+	long time, wake;
+	uint8_t st2[2] = { PCF8563_REG_ST2, };
+	uint8_t dat[5] = { PCF8563_REG_AMN, };
+
+	struct i2c_msg rdmsgs[] = {
+		{ i2c->addr, 0, 1, st2, },	/* setup read ptr */
+		{ i2c->addr, I2C_M_RD, 1, &st2[1], },	/* read status2 */
+	}, wrmsgs[] = {
+		{ i2c->addr, 0, sizeof(st2), st2, },
+		{ i2c->addr, 0, sizeof(dat), dat, },
+	};
+
+	if (alrm->enabled) {
+		ret = pcf8563_get_datetime(i2c, &tm);
+		if (ret < 0)
+			return ret;
+
+		ret = rtc_tm_to_time(&tm, &time);
+		if (ret < 0)
+			return ret;
+		/* change */
+		alrm->time.tm_sec = 0;
+		ret = rtc_tm_to_time(&alrm->time, &wake);
+		if (ret < 0)
+			return ret;
+		if ((wake < time) || (wake > (time + 28*24*60*60)))
+			return -ERANGE;
+
+		dat[1] = bin2bcd(alrm->time.tm_min);
+		dat[2] = bin2bcd(alrm->time.tm_hour);
+		dat[3] = bin2bcd(alrm->time.tm_mday);
+		dat[4] = PCF8563_AEN;
+		ret = i2c_transfer(i2c->adapter, rdmsgs, ARRAY_SIZE(rdmsgs));
+		if (ret < ARRAY_SIZE(rdmsgs))
+			return (ret < 0) ? ret : -EIO;
+		st2[1] = (st2[1] | PCF8563_ST2_AIEN) & ~PCF8563_ST2_AF;
+		ret = i2c_transfer(i2c->adapter, wrmsgs, ARRAY_SIZE(wrmsgs));
+		if (ret < ARRAY_SIZE(wrmsgs))
+			return (ret < 0) ? ret : -EIO;
+	} else {
+		ret = i2c_transfer(i2c->adapter, rdmsgs, ARRAY_SIZE(rdmsgs));
+		if (ret < ARRAY_SIZE(rdmsgs))
+			return (ret < 0) ? ret : -EIO;
+		st2[1] &= ~(PCF8563_ST2_AIEN | PCF8563_ST2_AF);
+		ret = i2c_transfer(i2c->adapter, wrmsgs, 1);
+		if (ret < 1)
+			return (ret < 0) ? ret : -EIO;
+	}
+	return 0;
+}
+
+static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+{
+	struct i2c_client *i2c = to_i2c_client(dev);
+	int ret;
+	uint8_t st2[2] = { PCF8563_REG_ST2, };
+	uint8_t dat[5] = { PCF8563_REG_AMN, };
+	struct i2c_msg msgs[] = {
+		{ i2c->addr, 0, 1, &st2[0], },	/* setup read ptr */
+		{ i2c->addr, I2C_M_RD, 1, &st2[1], },	/* read status2 */
+		{ i2c->addr, 0, 1, &dat[0], },	/* setup read ptr */
+		{ i2c->addr, I2C_M_RD, 4, &dat[1], },	/* read status2 */
+	};
+	ret = i2c_transfer(i2c->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret < ARRAY_SIZE(msgs))
+		return (ret < 0) ? ret : -EIO;
+
+	if ((st2[1] & PCF8563_ST2_AIEN) &&
+			((dat[1] & PCF8563_AEN) || /* min */
+			 (dat[2] & PCF8563_AEN) || /* hour */
+			 (dat[3] & PCF8563_AEN) || /* mday */
+			 !(dat[4] & PCF8563_AEN))) /* wday */
+		dev_warn(dev, "incompatible alarm flags\n");
+
+	alrm->enabled = st2[1] & PCF8563_ST2_AIEN;
+	alrm->pending = st2[1] & PCF8563_ST2_AF;
+	if (!alrm->enabled)
+		memset(&alrm->time, 0, sizeof(alrm->time));
+	else {
+		alrm->time.tm_sec = 0;
+		alrm->time.tm_min = bcd2bin(dat[1] & 0x7f);
+		alrm->time.tm_hour = bcd2bin(dat[2] & 0x3f);
+		alrm->time.tm_mday = bcd2bin(dat[3] & 0x3f);
+		alrm->time.tm_mon = -1;
+		alrm->time.tm_year = -1;
+	}
+	return 0;
+}
+
 static const struct rtc_class_ops pcf8563_rtc_ops = {
 	.ioctl		= pcf8563_rtc_ioctl,
 	.read_time	= pcf8563_rtc_read_time,
 	.set_time	= pcf8563_rtc_set_time,
+	.read_alarm	= pcf8563_rtc_read_alarm,
+	.set_alarm	= pcf8563_rtc_set_alarm,
 };
 
 static int pcf8563_probe(struct i2c_client *client,

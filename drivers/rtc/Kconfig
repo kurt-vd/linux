@@ -284,6 +284,7 @@ config RTC_DRV_PCF8563
 	  If you say yes here you get support for the
 	  Philips PCF8563 RTC chip. The Epson RTC8564
 	  should work as well.
+	  The driver supports the alarm function.
 
 	  This driver can also be built as a module. If so, the module
 	  will be called rtc-pcf8563.
