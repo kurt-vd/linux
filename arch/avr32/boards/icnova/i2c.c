@@ -20,6 +20,20 @@ static struct i2c_board_info icnova_i2c[] = {
 		.addr = 0x68,
 	},
 #endif
+#ifdef CONFIG_BOARD_LINUMATIC
+	{
+		.type = "pcf8563",
+		.addr = 0x51,
+	},
+	{
+		.type = "ad7995",
+		.addr = 0x28,
+	},
+	{
+		.type = "lm75",
+		.addr = 0x48,
+	},
+#endif
 };
 
 #ifndef CONFIG_ATMEL_TWI
