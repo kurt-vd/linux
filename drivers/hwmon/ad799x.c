@@ -163,96 +163,6 @@ static const struct attribute_group ad799x_attr_group = {
 	.attrs = ad799x_attributes,
 };
 
-
-/* Return 0 if detection is successful, -ENODEV otherwise
- *
- *
- *
- */
-static int ad799x_detect(struct i2c_client *new_client, int kind,
-	                                        struct i2c_board_info *info)
-{
-
-	s32 ret;
-	u8 return_values[2];
-	u8 id_flags[4] = {0x00, 0x10, 0x20, 0x30};
-	u8 i, mask = (1 << AD799X_CON_CH0);
-	const char *type_name;
-
-	struct i2c_adapter *adapter = new_client->adapter;
-
-	/*      We only need block functionality        */
-	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BLOCK_DATA))
-	        return -ENODEV;
-
-	/*      If not forced   */
-	if (kind < 0) {
-
-	        /*      Channel sequence: 0, 1, 2, 3    */
-	        for (i = 0; i < 4; i++) {
-
-	                ret = i2c_smbus_read_i2c_block_data(new_client, mask, 2,
-	                                                &return_values[0]);
-
-	                if ((return_values[0] & 0xF0) != id_flags[i])
-	                        return -ENODEV;
-
-	                /*      Compensate for new config mask  */
-	                mask <<= 1;
-	        }
-
-	        kind = ad7999;
-
-	        /*      Looping, trying to disproof statment above      */
-	        for (i = 0; i < 50; i++) {
-
-	                ret = i2c_smbus_read_i2c_block_data(new_client, mask, 2,
-	                                                 &return_values[0]);
-
-	                if (return_values[1] & 0x0F) {
-	                        if (return_values[1] & 0x03) {
-	                                kind = ad7991;
-	                                break;
-	                        } else {
-	                                kind = ad7995;
-	                        }
-	                }
-	                /*      Switching adc input channel     */
-	                if (mask == 0x80)
-	                        mask = (1 << AD799X_CON_CH0);
-	                else
-	                        mask <<= 1;
-	        }
-
-	        /*      No ad7999 @ 0x28        */
-	        if (new_client->addr == 0x28 && kind == ad7999)
-	                return -ENODEV;
-
-	        /*      The rest is done as if with force parameter     */
-	}
-
-	/*      If force parameter      */
-	switch (kind) {
-	case ad7991 :
-	        type_name = "ad7991";
-	        break;
-	case ad7995 :
-	        type_name = "ad7995";
-	        break;
-	case ad7999 :
-	        type_name = "ad7999";
-	        break;
-	default :
-	        return -ENODEV;
-	}
-
-	pr_info("ad799x: Found Analog Devices %s chip\n", type_name);
-
-	strlcpy(info->type, type_name, I2C_NAME_SIZE);
-
-	 return 0;
-}
-
 /*
  *     Returns 0 on success and error code on failure.
  *
@@ -307,7 +217,7 @@ exit:
 }
 
 /*     Removing different device registrations (buttom of probe func.) */
-static int __devexit ad799x_remove(struct i2c_client *client)
+static int __exit ad799x_remove(struct i2c_client *client)
 {
 	struct ad799x_data *ad799x = i2c_get_clientdata(client);
 
@@ -334,31 +244,18 @@ static struct i2c_device_id ad799x_idtable[] = {
 /*     Tighs id_table to device	*/
 MODULE_DEVICE_TABLE(i2c, ad799x_idtable);
 
-
 static struct i2c_driver ad799x_driver = {
-	.class = I2C_CLASS_HWMON,
 	.driver = {
-		   .name = "ad799x",
+		.name   = "ad799x",
 	},
-	.probe = ad799x_probe,
-	.remove = __devexit_p(ad799x_remove),
-	.id_table = ad799x_idtable,
+	.probe          = ad799x_probe,
+	.remove         = ad799x_remove,
+	.id_table       = ad799x_idtable,
 };
-
-static int __init ad799x_init(void)
-{
-	return i2c_add_driver(&ad799x_driver);
-}
-
-static void __exit ad799x_cleanup(void)
-{
-	i2c_del_driver(&ad799x_driver);
-}
 
 MODULE_AUTHOR("Sigurd Myhre Andreassen <sigurdan at stud.ntnu.no>");
 MODULE_DESCRIPTION("Driver for the Norwegian Defence Research"
 		   "Establishment (FFI). Analog Devices AD7991/5/9 driver");
 MODULE_LICENSE("GPL");
 
-module_init(ad799x_init);
-module_exit(ad799x_cleanup);
+module_i2c_driver(ad799x_driver);
