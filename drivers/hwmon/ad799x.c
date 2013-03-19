@@ -2,6 +2,7 @@
  * ad799x.c - Linux kernel module for hardware monitoring
  *
  * Copyright (C) 2009  Sigurd M. Andreassen <sigurdan at stud.ntnu.no>
+ * Copyright (C) 2013  Kurt Van Dijck <linux@vandijck-laurijssen.be>
  *
  * Based on the lm90 driver. This driver was written for the ad7991
  * IC by Analog devices, but also supports ad7995 and ad7999. This
@@ -29,32 +30,14 @@
 #include <linux/i2c.h>
 #include <linux/slab.h>		/*      kzalloc()               */
 #include <linux/sysfs.h>	/*      sysfs_create_group()    */
-#include <linux/sched.h>	/*      jiffies		 */
-#include <linux/delay.h>
 #include <linux/hwmon.h>
 #include <linux/hwmon-sysfs.h>
 #include <linux/err.h>
 
-/* Configuration register bits */
-#define AD799X_CON_CH3		 7
-#define AD799X_CON_CH2	 6
-#define AD799X_CON_CH1		 5
-#define AD799X_CON_CH0		 4
-#define AD799X_CON_REF_SEL     3
-#define AD799X_CON_FLTR	2
-#define AD799X_CON_BIT_TR_DL   1
-#define AD799X_CON_SMP_DL      0
-
-/*     Addresses to scan -> joins with I2C_CLIENT macro	 */
-static const unsigned short normal_i2c[] = { 0x28, 0x29, I2C_CLIENT_END };
-
-I2C_CLIENT_INSMOD_3(ad7991, ad7995, ad7999);
-
 /*     Each client has this additional data    */
 struct ad799x_data {
 	struct device *hwmon_dev;
-	int kind;	/* enum defined by INSMOD_3 macro */
-	u32 reference;	/* [mV] */
+	unsigned int reference;	/* [mV] */
 	struct mutex lock;
 };
 
@@ -68,38 +51,16 @@ struct ad799x_data {
 static ssize_t ad799x_read(struct device *dev, struct device_attribute *devattr,
 			   char *buf)
 {
-
-	s32 ret;
-	u16 max_value;
-	u8 config_reg;
-	u8 return_values[2];
-	struct ad799x_data *ad799x;
-
-	struct attribute ad799x_attr = devattr->attr;
-
 	struct i2c_client *client = to_i2c_client(dev);
+	struct ad799x_data *ad799x = i2c_get_clientdata(client);
+	int ret, command, vref;
+	u8 adc[2];
 
-	/*      Switching by filename number, in<number>_input  */
-	switch (ad799x_attr.name[2]) {
-	case '0' :
-		config_reg = (1 << AD799X_CON_CH0);
-		break;
-	case '1' :
-		config_reg = (1 << AD799X_CON_CH1);
-		break;
-	case '2' :
-		config_reg = (1 << AD799X_CON_CH2);
-		break;
-	case '3'	:
-		config_reg = (1 << AD799X_CON_CH3);
-		break;
-	default :
-		return -EINVAL;
-	}
+	/* prepare command byte */
+	command = 0x10 << to_sensor_dev_attr(devattr)->index;
 
-	/*      Writing ADC sample channel according to attribut	*/
-	ret = i2c_smbus_read_i2c_block_data(client, config_reg, 2,
-							&return_values[0]);
+	/* Writing ADC sample channel according to attribut */
+	ret = i2c_smbus_read_i2c_block_data(client, command, 2, adc);
 
 	if (ret != 2) {
 		dev_dbg(&client->dev, "ad799x: Problems reading from adc"
@@ -107,41 +68,15 @@ static ssize_t ad799x_read(struct device *dev, struct device_attribute *devattr,
 		return ret;
 	}
 
-	ret = (return_values[0] << 8) | return_values[1];
-
-	/*      Removing channel ID bits	*/
-	ret &= 0x0FFF;
-
-	ad799x = i2c_get_clientdata(client);
-
 	/*      Lock mutex and fetch reference value    */
 	if (mutex_lock_interruptible(&ad799x->lock))
 		return -ERESTARTSYS;
 
-	if (ad799x->kind == ad7995) {
-		/*      10-bit  */
-		ret = (ret >> 2);
-		max_value = 1023;
-	}
-	else if (ad799x->kind == ad7999) {
-		/*      8-bit   */
-		ret = (ret >> 4);
-		max_value = 255;
-	}
-	else if (ad799x->kind == ad7991) {
-		/*      12-bit  */
-		max_value = 4095;
-	}
-	else {
-		return -EINVAL;
-	}
-
-	ret = ret * ad799x->reference;
+	vref = ad799x->reference;
 
 	mutex_unlock(&ad799x->lock);
 
-	ret = ret / max_value;
-
+	ret = (((adc[0] << 8) | adc[1]) & 0x0fff) * vref / 4095;
 	return sprintf(buf, "%d\n", ret);
 }
 
@@ -153,29 +88,20 @@ static ssize_t ad799x_read(struct device *dev, struct device_attribute *devattr,
 static ssize_t ad799x_show(struct device *dev, struct device_attribute *attr,
 			   char *buf)
 {
+	struct ad799x_data *ad799x = i2c_get_clientdata(to_i2c_client(dev));
+	int value;
 
-	struct i2c_client *client;
-	struct ad799x_data *ad799x;
-
-	u32 temp_value = 0;
-
-	u8 nr = to_sensor_dev_attr(attr)->index;
-
-	switch (nr) {
-	case 0:
+	switch (to_sensor_dev_attr(attr)->index) {
+	case 0 :
 		/*      No other then ground level      */
-		temp_value = 0;
+		value = 0;
 		break;
 	case 1 :
-		/*      Fetch client data struct	*/
-		client = to_i2c_client(dev);
-		ad799x = i2c_get_clientdata(client);
-
 		/*      Lock mutex and fetch reference value    */
 		if (mutex_lock_interruptible(&ad799x->lock))
 			return -ERESTARTSYS;
 
-		temp_value = ad799x->reference;
+		value = ad799x->reference;
 
 		mutex_unlock(&ad799x->lock);
 		break;
@@ -183,7 +109,7 @@ static ssize_t ad799x_show(struct device *dev, struct device_attribute *attr,
 		return -EINVAL;
 	}
 
-	return sprintf(buf, "%d\n", temp_value);
+	return sprintf(buf, "%d\n", value);
 }
 
 /*
@@ -194,10 +120,8 @@ static ssize_t ad799x_show(struct device *dev, struct device_attribute *attr,
 static ssize_t ad799x_set(struct device *dev, struct device_attribute *devattr,
 			  const char *buf, size_t count)
 {
+	struct ad799x_data *ad799x = i2c_get_clientdata(to_i2c_client(dev));
 	unsigned long new_ref;
-
-	struct i2c_client *client = to_i2c_client(dev);
-	struct ad799x_data *ad799x = i2c_get_clientdata(client);
 
 	/*      Fetch incoming value and check it for validity  */
 	if (strict_strtoul(buf, 10, &new_ref))
@@ -218,20 +142,20 @@ static ssize_t ad799x_set(struct device *dev, struct device_attribute *devattr,
 }
 
 /*     Tighing attribute names to functions    */
-static DEVICE_ATTR(in0_input, S_IRUGO, ad799x_read, NULL);
-static DEVICE_ATTR(in1_input, S_IRUGO, ad799x_read, NULL);
-static DEVICE_ATTR(in2_input, S_IRUGO, ad799x_read, NULL);
-static DEVICE_ATTR(in3_input, S_IRUGO, ad799x_read, NULL);
+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, ad799x_read, NULL, 0);
+static SENSOR_DEVICE_ATTR(in1_input, S_IRUGO, ad799x_read, NULL, 1);
+static SENSOR_DEVICE_ATTR(in2_input, S_IRUGO, ad799x_read, NULL, 2);
+static SENSOR_DEVICE_ATTR(in3_input, S_IRUGO, ad799x_read, NULL, 3);
 static SENSOR_DEVICE_ATTR(in_min, S_IRUGO, ad799x_show, NULL, 0);
 static SENSOR_DEVICE_ATTR(in_max, S_IWUSR | S_IRUGO,
-			  ad799x_show, ad799x_set, 1);
+		ad799x_show, ad799x_set, 1);
 
 /*     Sysfs attributes	*/
 static struct attribute *ad799x_attributes[] = {
-	&dev_attr_in0_input.attr,
-	&dev_attr_in1_input.attr,
-	&dev_attr_in2_input.attr,
-	&dev_attr_in3_input.attr,
+	&sensor_dev_attr_in0_input.dev_attr.attr,
+	&sensor_dev_attr_in1_input.dev_attr.attr,
+	&sensor_dev_attr_in2_input.dev_attr.attr,
+	&sensor_dev_attr_in3_input.dev_attr.attr,
 	&sensor_dev_attr_in_min.dev_attr.attr,
 	&sensor_dev_attr_in_max.dev_attr.attr,
 	NULL
@@ -370,9 +294,6 @@ static int ad799x_probe(struct i2c_client *client,
 	if (mutex_lock_interruptible(&ad799x->lock))
 		return -ERESTARTSYS;
 
-	/*      Setting chip kind from ad799x_idtable passed by id struct */
-	ad799x->kind = id->driver_data;
-
 	ad799x->reference = 3300;
 
 	mutex_unlock(&ad799x->lock);
@@ -401,7 +322,6 @@ static int __devexit ad799x_remove(struct i2c_client *client)
 	kfree(ad799x);
 
 	return 0;
-
 }
 
 /*     All supported devices   */
