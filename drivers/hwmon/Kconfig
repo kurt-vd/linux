@@ -99,11 +99,14 @@ config SENSORS_AD7418
 	  will be called ad7418.
 
 config SENSORS_AD799X
-       tristate "Analog Devices AD7991, AD7995 and AD7999"
+       tristate "Analog Devices AD799x"
        depends on I2C && EXPERIMENTAL
        help
          If you say yes here you get support for the Analog Devices
-         AD7991, AD7995 and AD7999 4 channel ADC.
+         AD7991, AD7993, AD7994, AD7995 and AD7999 4 channel ADC.
+
+	 The advanced functions of AD7993 & AD7994 remain unused
+	 by this driver.
 
          This driver can also be built as a module. If so, the module
          will be called ad799x.

@@ -327,6 +327,8 @@ static int __devexit ad799x_remove(struct i2c_client *client)
 /*     All supported devices   */
 static struct i2c_device_id ad799x_idtable[] = {
 	{ "ad7991", },
+	{ "ad7993", },
+	{ "ad7994", },
 	{ "ad7995", },
 	{ "ad7999", },
 	{}
