@@ -127,9 +127,6 @@ static ssize_t ad799x_set(struct device *dev, struct device_attribute *devattr,
 	if (strict_strtoul(buf, 10, &new_ref))
 		return -EINVAL;
 
-	if (new_ref > 5500 || new_ref < 2700)
-		return -EINVAL;
-
 	/*      Lock data struct and set new input reference value      */
 	if (mutex_lock_interruptible(&ad799x->lock))
 		return -ERESTARTSYS;
