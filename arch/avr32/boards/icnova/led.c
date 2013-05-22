@@ -46,6 +46,13 @@ static struct gpio_led icnova_led[] = {
 		.active_low = 1,
 	},
 #endif
+#ifdef CONFIG_BOARD_LINUMATIC
+	{
+		.name = "power",
+		.gpio = GPIO_PIN_PA(22),
+		.default_trigger = "heartbeat",
+	},
+#endif
 #ifdef CONFIG_BOARD_ICNOVA_FULL
 	{
 		.name = "pwrled:red",
