@@ -5,8 +5,14 @@
 #include <mach/at32ap700x.h>
 #include <mach/gpio.h>
 
+#define DEFLED(PORT, PIN, NAME) \
+	{ \
+		.name = NAME, \
+		.gpio = GPIO_PIN_P##PORT(PIN) \
+	}
+
 static struct gpio_led icnova_led[] = {
-#if defined(CONFIG_BOARD_ICNOVA_BASE)
+#ifdef CONFIG_BOARD_ICNOVA_BASE
 	{
 		.name = "led1:green",
 		.gpio = GPIO_PIN_PA(23),
@@ -52,6 +58,19 @@ static struct gpio_led icnova_led[] = {
 		.gpio = GPIO_PIN_PA(22),
 		.default_trigger = "heartbeat",
 	},
+	DEFLED(A, 14, "out01"),
+	DEFLED(A, 15, "out02"),
+	DEFLED(A, 25, "out03"),
+	DEFLED(A, 27, "out04"),
+	DEFLED(A, 19, "out05"),
+	DEFLED(A, 20, "out06"),
+	DEFLED(A, 23, "out07"),
+	DEFLED(A, 24, "out08"),
+	DEFLED(A, 16, "out09"),
+
+	DEFLED(A, 21, "pwm00"),
+	DEFLED(A, 28, "pwm02"),
+	DEFLED(A, 29, "pwm03"),
 #endif
 #ifdef CONFIG_BOARD_ICNOVA_FULL
 	{
