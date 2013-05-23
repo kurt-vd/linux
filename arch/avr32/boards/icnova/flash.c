@@ -50,11 +50,24 @@ static struct mtd_partition flash_parts[] = {
 		.size           = 0x00010000,
 		.mask_flags     = MTD_WRITEABLE,
 	},
+#ifdef CONFIG_BOARD_LINUMATIC
+	{
+		.name           = "core",
+		.offset         = 0x00030000,
+		.size           = 0x002d0000,
+	},
+	{
+		.name           = "data",
+		.offset         = 0x00300000,
+		.size           = 0x00500000,
+	},
+#else
 	{
 		.name           = "root",
 		.offset         = 0x00030000,
 		.size           = 0x007d0000,
 	},
+#endif
 };
 
 static struct physmap_flash_data flash_data = {
