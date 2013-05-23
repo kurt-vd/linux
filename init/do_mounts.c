@@ -523,11 +523,11 @@ void __init mount_root(void)
 #endif
 #ifdef CONFIG_BLOCK
 	{
-		int err = create_dev("/dev/root", ROOT_DEV);
+		int err = create_dev(saved_root_name, ROOT_DEV);
 
 		if (err < 0)
 			pr_emerg("Failed to create /dev/root: %d\n", err);
-		mount_block_root("/dev/root", root_mountflags);
+		mount_block_root(saved_root_name, root_mountflags);
 	}
 #endif
 }
