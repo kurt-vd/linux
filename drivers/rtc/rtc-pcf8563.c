@@ -22,6 +22,7 @@
 #include <linux/of.h>
 
 #define DRV_VERSION "0.4.3"
+#define SHOW_REGS
 
 #define PCF8563_REG_ST1		0x00 /* status */
 #define PCF8563_REG_ST2		0x01
@@ -43,11 +44,16 @@
 #define PCF8563_REG_TMRC	0x0E /* timer control */
 #define PCF8563_REG_TMR		0x0F /* timer */
 
+#define PCF8563_NREG		0x10
+
 #define PCF8563_SC_LV		0x80 /* low voltage */
 #define PCF8563_MO_C		0x80 /* century */
-#define PCF8563_ST2_AIEN	0x02
+#define PCF8563_ST2_TIE		0x01
+#define PCF8563_ST2_AIE		0x02
+#define PCF8563_ST2_TF		0x04
 #define PCF8563_ST2_AF		0x08
-#define PCF8563_AEN		0x80 /* per-item alarm enable */
+#define PCF8563_ST2_TI_TP	0x10
+#define PCF8563_AEN		0x80 /* per-item alarm disable */
 
 static struct i2c_driver pcf8563_driver;
 
@@ -237,97 +243,116 @@ static int pcf8563_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	return pcf8563_set_datetime(to_i2c_client(dev), tm);
 }
 
-static int pcf8563_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+/*
+ * Utility to modify ST2 register that controls
+ * the sources and state of INT pin.
+ * returns the original content of ST2.
+ */
+static int pcf8563_getset_st2(struct device *dev, int mask, int value)
 {
 	struct i2c_client *i2c = to_i2c_client(dev);
 	int ret;
-	struct rtc_time tm;
-	long time, wake;
-	uint8_t st2[2] = { PCF8563_REG_ST2, };
-	uint8_t dat[5] = { PCF8563_REG_AMN, };
-
+	uint8_t dat[2] = { PCF8563_REG_ST2, }, st2, orig_st2;
 	struct i2c_msg rdmsgs[] = {
-		{ i2c->addr, 0, 1, st2, },	/* setup read ptr */
-		{ i2c->addr, I2C_M_RD, 1, &st2[1], },	/* read status2 */
+		{ i2c->addr, 0, 1, dat, },
+		{ i2c->addr, I2C_M_RD, 1, dat+1, },
 	}, wrmsgs[] = {
-		{ i2c->addr, 0, sizeof(st2), st2, },
-		{ i2c->addr, 0, sizeof(dat), dat, },
+		{ i2c->addr, 0, 2, dat, },
 	};
 
-	if (alrm->enabled) {
-		ret = pcf8563_get_datetime(i2c, &tm);
-		if (ret < 0)
-			return ret;
+	ret = i2c_transfer(i2c->adapter, rdmsgs, ARRAY_SIZE(rdmsgs));
+	if (ret < 0)
+		return (ret < 0) ? ret : -EIO;
+	orig_st2 = dat[1];
 
-		ret = rtc_tm_to_time(&tm, &time);
-		if (ret < 0)
-			return ret;
-		/* change */
-		alrm->time.tm_sec = 0;
-		ret = rtc_tm_to_time(&alrm->time, &wake);
-		if (ret < 0)
-			return ret;
-		if ((wake < time) || (wake > (time + 28*24*60*60)))
-			return -ERANGE;
+	if (!mask)
+		/* nothing to change */
+		return orig_st2;
 
-		dat[1] = bin2bcd(alrm->time.tm_min);
-		dat[2] = bin2bcd(alrm->time.tm_hour);
-		dat[3] = bin2bcd(alrm->time.tm_mday);
-		dat[4] = PCF8563_AEN;
-		ret = i2c_transfer(i2c->adapter, rdmsgs, ARRAY_SIZE(rdmsgs));
-		if (ret < ARRAY_SIZE(rdmsgs))
-			return (ret < 0) ? ret : -EIO;
-		st2[1] = (st2[1] | PCF8563_ST2_AIEN) & ~PCF8563_ST2_AF;
-		ret = i2c_transfer(i2c->adapter, wrmsgs, ARRAY_SIZE(wrmsgs));
-		if (ret < ARRAY_SIZE(wrmsgs))
-			return (ret < 0) ? ret : -EIO;
-	} else {
-		ret = i2c_transfer(i2c->adapter, rdmsgs, ARRAY_SIZE(rdmsgs));
-		if (ret < ARRAY_SIZE(rdmsgs))
-			return (ret < 0) ? ret : -EIO;
-		st2[1] &= ~(PCF8563_ST2_AIEN | PCF8563_ST2_AF);
-		ret = i2c_transfer(i2c->adapter, wrmsgs, 1);
-		if (ret < 1)
-			return (ret < 0) ? ret : -EIO;
-	}
-	return 0;
+	st2 = (orig_st2 & ~mask) | (value & mask);
+	/* fix status bits: write 1 (means: leave) when not in mask */
+	st2 |= (PCF8563_ST2_TF | PCF8563_ST2_AF) & ~mask;
+	/* mask out 3 unused (msb) bits */
+	st2 &= 0x1f;
+
+	dat[1] = st2;
+	ret = i2c_transfer(i2c->adapter, wrmsgs, ARRAY_SIZE(wrmsgs));
+	if (ret < 0)
+		return (ret < 0) ? ret : -EIO;
+	return orig_st2;
 }
 
-static int pcf8563_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+static int pcf8563_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
 {
 	struct i2c_client *i2c = to_i2c_client(dev);
 	int ret;
-	uint8_t st2[2] = { PCF8563_REG_ST2, };
-	uint8_t dat[5] = { PCF8563_REG_AMN, };
+	uint8_t addr = 0, dat[PCF8563_NREG];
 	struct i2c_msg msgs[] = {
-		{ i2c->addr, 0, 1, &st2[0], },	/* setup read ptr */
-		{ i2c->addr, I2C_M_RD, 1, &st2[1], },	/* read status2 */
-		{ i2c->addr, 0, 1, &dat[0], },	/* setup read ptr */
-		{ i2c->addr, I2C_M_RD, 4, &dat[1], },	/* read status2 */
+		{ i2c->addr, 0, 1, &addr, },
+		{ i2c->addr, I2C_M_RD, PCF8563_NREG, dat, },
 	};
+
 	ret = i2c_transfer(i2c->adapter, msgs, ARRAY_SIZE(msgs));
 	if (ret < ARRAY_SIZE(msgs))
 		return (ret < 0) ? ret : -EIO;
 
-	if ((st2[1] & PCF8563_ST2_AIEN) &&
-			((dat[1] & PCF8563_AEN) || /* min */
-			 (dat[2] & PCF8563_AEN) || /* hour */
-			 (dat[3] & PCF8563_AEN) || /* mday */
-			 !(dat[4] & PCF8563_AEN))) /* wday */
-		dev_warn(dev, "incompatible alarm flags\n");
+	alrm->time.tm_sec = 0;
+	alrm->time.tm_min = -1;
+	alrm->time.tm_hour = -1;
+	alrm->time.tm_wday = -1;
+	alrm->time.tm_mday = -1;
+	alrm->time.tm_mon = -1;
+	alrm->time.tm_year = -1;
 
-	alrm->enabled = st2[1] & PCF8563_ST2_AIEN;
-	alrm->pending = st2[1] & PCF8563_ST2_AF;
-	if (!alrm->enabled)
-		memset(&alrm->time, 0, sizeof(alrm->time));
-	else {
-		alrm->time.tm_sec = 0;
-		alrm->time.tm_min = bcd2bin(dat[1] & 0x7f);
-		alrm->time.tm_hour = bcd2bin(dat[2] & 0x3f);
-		alrm->time.tm_mday = bcd2bin(dat[3] & 0x3f);
-		alrm->time.tm_mon = -1;
-		alrm->time.tm_year = -1;
-	}
+	if (bcd2bin(!(dat[PCF8563_REG_AMN] & PCF8563_AEN)))
+		alrm->time.tm_min = bcd2bin(dat[PCF8563_REG_AMN] & 0x7f);
+	if (bcd2bin(!(dat[PCF8563_REG_AHR] & PCF8563_AEN)))
+		alrm->time.tm_hour = bcd2bin(dat[PCF8563_REG_AHR] & 0x3f);
+	if (bcd2bin(!(dat[PCF8563_REG_ADM] & PCF8563_AEN)))
+		alrm->time.tm_mday = bcd2bin(dat[PCF8563_REG_ADM] & 0x3f);
+	if (bcd2bin(!(dat[PCF8563_REG_ADW] & PCF8563_AEN)))
+		alrm->time.tm_mday = bcd2bin(dat[PCF8563_REG_ADW] & 0x03);
+	alrm->enabled = (dat[PCF8563_REG_ST2] & PCF8563_ST2_AIE) ? 1 : 0;
+	alrm->pending = (dat[PCF8563_REG_ST2] & PCF8563_ST2_AF) ? 1 : 0;
+	return 0;
+}
+
+static inline int mkalrmreg(int value, int inval)
+{
+	return (value > inval) ? PCF8563_AEN : bin2bcd(value);
+}
+
+static int pcf8563_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
+{
+	struct i2c_client *i2c = to_i2c_client(dev);
+	int ret;
+	uint8_t dat[PCF8563_NREG] = {
+		[PCF8563_REG_AMN-1] = PCF8563_REG_AMN,
+	};
+	struct i2c_msg msgs = { i2c->addr, 0, 5, dat + PCF8563_REG_AMN -1, };
+
+	/* clear AIE */
+	ret = pcf8563_getset_st2(dev, PCF8563_ST2_AIE, 0);
+	if (ret < 0)
+		return ret;
+	/* write values */
+	dat[PCF8563_REG_AMN] = mkalrmreg(alrm->time.tm_min, 60);
+	dat[PCF8563_REG_AHR] = mkalrmreg(alrm->time.tm_hour, 24);
+	dat[PCF8563_REG_ADM] = mkalrmreg(alrm->time.tm_mday, 31);
+	/*
+	 * Disable weekday alarm, day-of-month may schedule an alarm
+	 * that is >1week in the future
+	 */
+	dat[PCF8563_REG_ADW] = PCF8563_AEN;
+
+	ret = i2c_transfer(i2c->adapter, &msgs, 1);
+	if (ret < 1)
+		return (ret < 0) ? ret : -EIO;
+	/* set AIE, and clear AF */
+	ret = pcf8563_getset_st2(dev, PCF8563_ST2_AIE | PCF8563_ST2_AF,
+			PCF8563_ST2_AIE);
+	if (ret < 0)
+		return ret;
 	return 0;
 }
 
@@ -335,16 +360,91 @@ static const struct rtc_class_ops pcf8563_rtc_ops = {
 	.ioctl		= pcf8563_rtc_ioctl,
 	.read_time	= pcf8563_rtc_read_time,
 	.set_time	= pcf8563_rtc_set_time,
-	.read_alarm	= pcf8563_rtc_read_alarm,
-	.set_alarm	= pcf8563_rtc_set_alarm,
+	.read_alarm	= pcf8563_read_alarm,
+	.set_alarm	= pcf8563_set_alarm,
 };
 
+/* SYSFS */
+static ssize_t pcf8563_sysfs_show_INT(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	char *str;
+	int ret;
+
+	/* only fetch ST2 */
+	ret = pcf8563_getset_st2(dev, 0, 0);
+	if (ret < 0)
+		return ret;
+
+	str = buf;
+	str += sprintf(str, "%s", (ret & PCF8563_ST2_TI_TP) ? "PULSE" : "INTERVAL");
+	if (ret & PCF8563_ST2_TIE)
+		str += sprintf(str, " TIE");
+	if (ret & PCF8563_ST2_AIE)
+		str += sprintf(str, " AIE");
+	if (ret & PCF8563_ST2_TF)
+		str += sprintf(str, " TF");
+	if (ret & PCF8563_ST2_AF)
+		str += sprintf(str, " AF");
+	str += sprintf(str, "\n");
+	return str - buf;
+}
+static DEVICE_ATTR(INT, S_IRUGO, pcf8563_sysfs_show_INT, NULL);
+
+#ifdef SHOW_REGS
+static ssize_t pcf8563_sysfs_show_regs(struct device *dev,
+				struct device_attribute *attr, char *buf)
+{
+	struct i2c_client *i2c = to_i2c_client(dev);
+	char *str;
+	int ret, j;
+	uint8_t addr = 0, dat[PCF8563_NREG];
+	struct i2c_msg msgs[] = {
+		{ i2c->addr, 0, 1, &addr, },
+		{ i2c->addr, I2C_M_RD, PCF8563_NREG, dat, },
+	};
+	static const char *const regnames[] = {
+		"st1", "st2",
+		"v/sec", "min", "hour", "day", "wday", "c_mon", "year",
+		"a-min", "a-hour", "a-day", "a-wday",
+		"clkout",
+		"t-ctrl", "timer",
+	};
+
+	ret = i2c_transfer(i2c->adapter, msgs, ARRAY_SIZE(msgs));
+	if (ret < ARRAY_SIZE(msgs))
+		return (ret < 0) ? ret : -EIO;
+
+	str = buf;
+	for (j = 0; j < ARRAY_SIZE(dat); ++j)
+		str += sprintf(str, "%s\t%02x\n", regnames[j], dat[j]);
+	return str - buf;
+}
+static DEVICE_ATTR(regs, S_IRUGO, pcf8563_sysfs_show_regs, NULL);
+#endif
+
+static struct attribute *attrs[] = {
+	&dev_attr_INT.attr,
+#ifdef SHOW_REGS
+	&dev_attr_regs.attr,
+#endif
+	NULL,
+};
+static struct attribute_group attr_group = {
+	.attrs = attrs,
+};
+
+/*
+ * Disable TIE & AIE on boot.
+ * Leave TF & AF untouched, so you could read the flags later
+ * in order to detect a Timer or Alarm wakeup
+ */
 static int pcf8563_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
 {
 	struct pcf8563 *pcf8563;
 
-	int err = 0;
+	int err = 0, ret;
 
 	dev_dbg(&client->dev, "%s\n", __func__);
 
@@ -359,6 +459,19 @@ static int pcf8563_probe(struct i2c_client *client,
 
 	i2c_set_clientdata(client, pcf8563);
 
+	/*
+	 * Fix /INT on boot, leave flags, but disable xIE,
+	 * The idea of xIE is to wake me up, and I just did
+	 */
+	ret = pcf8563_getset_st2(&client->dev,
+			PCF8563_ST2_AIE | PCF8563_ST2_TIE, 0);
+	if (ret < 0)
+		dev_warn(&client->dev, "get ST2 failed\n");
+
+	/* add sysfs */
+	if (sysfs_create_group(&client->dev.kobj, &attr_group) < 0)
+		goto fail_sysfs;
+
 	pcf8563->rtc = rtc_device_register(pcf8563_driver.driver.name,
 				&client->dev, &pcf8563_rtc_ops, THIS_MODULE);
 
@@ -370,6 +483,10 @@ static int pcf8563_probe(struct i2c_client *client,
 	return 0;
 
 exit_kfree:
+	sysfs_remove_group(&client->dev.kobj, &attr_group);
+
+fail_sysfs:
+	i2c_set_clientdata(client, NULL);
 	kfree(pcf8563);
 
 	return err;
@@ -382,6 +499,8 @@ static int pcf8563_remove(struct i2c_client *client)
 	if (pcf8563->rtc)
 		rtc_device_unregister(pcf8563->rtc);
 
+	sysfs_remove_group(&client->dev.kobj, &attr_group);
+	i2c_set_clientdata(client, NULL);
 	kfree(pcf8563);
 
 	return 0;
