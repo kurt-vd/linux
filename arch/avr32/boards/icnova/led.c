@@ -71,6 +71,17 @@ static struct gpio_led icnova_led[] = {
 	DEFLED(A, 21, "pwm00"),
 	DEFLED(A, 28, "pwm02"),
 	DEFLED(A, 29, "pwm03"),
+
+#ifdef CONFIG_BOARD_LINUMATIC_4H
+	DEFLED(A, 0, "h2r"),
+	DEFLED(A, 1, "h2f"),
+	DEFLED(A, 2, "h1r"),
+	DEFLED(A, 3, "h1f"),
+	DEFLED(A, 4, "h3f"),
+	DEFLED(A, 5, "h3r"),
+	DEFLED(A, 10, "h4f"),
+	DEFLED(A, 11, "h4r"),
+#endif
 #endif
 #ifdef CONFIG_BOARD_ICNOVA_FULL
 	{

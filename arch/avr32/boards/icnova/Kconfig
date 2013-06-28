@@ -126,6 +126,10 @@ config BOARD_ICNOVA_BASE_CP2102
 	bool "ICnova Base has CP2102"
 	depends on BOARD_ICNOVA_BASE
 
+config BOARD_LINUMATIC_4H
+	bool "Linumatic 4H"
+	depends on BOARD_LINUMATIC
+
 config BOARD_ICNOVA_OEM_DEFCON
 	int "default UART for console"
 	depends on BOARD_ICNOVA_OEMBASED || BOARD_ICNOVA_OEMPLUSBASED

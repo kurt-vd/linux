@@ -33,6 +33,12 @@ static struct i2c_board_info icnova_i2c[] = {
 		.type = "lm75",
 		.addr = 0x48,
 	},
+#ifdef CONFIG_BOARD_LINUMATIC_4H
+	{
+		.type = "ad7994",
+		.addr = 0x21,
+	},
+#endif
 #endif
 };
 
