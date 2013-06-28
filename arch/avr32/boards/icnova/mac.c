@@ -17,10 +17,12 @@ static struct eth_addr __initdata hw_addr[2];
 struct macb_platform_data __initdata eth_data[] = {
 	{
 		.phy_mask	= ~(1U << 0),
+		.phy_irq_pin = -1,
 	},
 #ifdef CONFIG_BOARD_ICNOVA_DEV_MACB
 	{
 		.phy_mask	= ~(1U << 0),
+		.phy_irq_pin = -1,
 	},
 #endif
 };
