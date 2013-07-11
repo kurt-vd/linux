@@ -12,6 +12,16 @@
 	}
 
 static struct gpio_led icnova_ledpwm[] = {
+#ifdef CONFIG_BOARD_LINUMATIC
+	{
+		.name = "power",
+		.gpio = 3,
+		.default_trigger = "heartbeat",
+	},
+	DEFLED(2, "pwm00"),
+	DEFLED(0, "pwm02"),
+	DEFLED(1, "pwm03"),
+#endif
 };
 
 static struct gpio_led_platform_data icnova_ledpwm_data = {

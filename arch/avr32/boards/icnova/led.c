@@ -53,11 +53,6 @@ static struct gpio_led icnova_led[] = {
 	},
 #endif
 #ifdef CONFIG_BOARD_LINUMATIC
-	{
-		.name = "power",
-		.gpio = GPIO_PIN_PA(22),
-		.default_trigger = "heartbeat",
-	},
 	DEFLED(A, 14, "out01"),
 	DEFLED(A, 15, "out02"),
 	DEFLED(A, 25, "out03"),
@@ -67,11 +62,6 @@ static struct gpio_led icnova_led[] = {
 	DEFLED(A, 23, "out07"),
 	DEFLED(A, 24, "out08"),
 	DEFLED(A, 16, "out09"),
-
-	DEFLED(A, 21, "pwm00"),
-	DEFLED(A, 28, "pwm02"),
-	DEFLED(A, 29, "pwm03"),
-
 #ifdef CONFIG_BOARD_LINUMATIC_4H
 	DEFLED(A, 0, "h2r"),
 	DEFLED(A, 1, "h2f"),
