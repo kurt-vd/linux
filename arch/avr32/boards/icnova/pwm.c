@@ -20,19 +20,15 @@ static int icnova_pwm(void) {
 	char pwmmask = 0;
 #ifdef CONFIG_BOARD_ICNOVA_PWM0
 	pwmmask |= (1<<0);
-	at32_select_periph(GPIO_PIOA_BASE, (1<<28), GPIO_PERIPH_A, 0); //PWM0
 #endif
 #ifdef CONFIG_BOARD_ICNOVA_PWM1
 	pwmmask |= (1<<1);
-	at32_select_periph(GPIO_PIOA_BASE, (1<<29), GPIO_PERIPH_A, 0); //PWM1
 #endif
 #ifdef CONFIG_BOARD_ICNOVA_PWM2
 	pwmmask |= (1<<2);
-	at32_select_periph(GPIO_PIOA_BASE, (1<<21), GPIO_PERIPH_B, 0); //PWM2
 #endif
 #ifdef CONFIG_BOARD_ICNOVA_PWM3
 	pwmmask |= (1<<3);
-	at32_select_periph(GPIO_PIOA_BASE, (1<<22), GPIO_PERIPH_B, 0); //PWM3
 #endif
 	at32_add_device_pwm(pwmmask); //All four channels
 	platform_device_register(&icnova_pwmdev);
