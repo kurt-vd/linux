@@ -18,6 +18,9 @@ config BOARD_ICNOVA_DEV_IRDA
 config BOARD_ICNOVA_DEV_USBH
 	def_bool n
 
+config BOARD_ICNOVA_DEV_LED_PWM
+	def_bool n
+
 config BOARD_ICNOVA_FULL
 	def_bool n
 	select BOARD_ICNOVA_DEV_LED

@@ -7,6 +7,7 @@ obj-$(CONFIG_BOARD_ICNOVA_OEMPLUSBASED)	+= icnova_oem.o icnova_oem_plus.o nand.o
 
 obj-$(CONFIG_BOARD_ICNOVA_DEV_VGA)	+= vga.o
 obj-$(CONFIG_BOARD_ICNOVA_DEV_LED)	+= led.o
+obj-$(CONFIG_BOARD_ICNOVA_DEV_LED_PWM)	+= ledpwm.o
 obj-$(CONFIG_BOARD_ICNOVA_DEV_BTN)	+= btn.o
 obj-$(CONFIG_BOARD_ICNOVA_DEV_MAC)	+= mac.o
 obj-$(CONFIG_BOARD_ICNOVA_DEV_SPI)	+= spi.o
