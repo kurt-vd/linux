@@ -12,6 +12,12 @@
 #include <linux/i2c-gpio.h>
 #include <linux/platform_device.h>
 #endif
+#include <linux/moduleparam.h>
+
+#ifdef CONFIG_BOARD_LINUMATIC
+#undef MODULE_PARAM_PREFIX
+#define MODULE_PARAM_PREFIX "linumatic."
+#endif
 
 static struct i2c_board_info icnova_i2c[] = {
 #ifdef CONFIG_BOARD_ICNOVA_I2C_M41T82
@@ -41,6 +47,10 @@ static struct i2c_board_info icnova_i2c[] = {
 #endif
 #endif
 };
+
+#ifdef CONFIG_BOARD_LINUMATIC_4H
+module_param_named(adcaddr, icnova_i2c[3].addr, ushort, 0444);
+#endif
 
 #ifndef CONFIG_ATMEL_TWI
 static struct i2c_gpio_platform_data i2c_gpio_data = {
