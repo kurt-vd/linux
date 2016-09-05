@@ -114,8 +114,6 @@ struct s_pstats {
 
 /* receive filters subscribed for 'all' CAN devices */
 extern struct dev_rcv_lists can_rx_alldev_list;
-/* lock for dev_rcv_lists modifications */
-extern spinlock_t can_rcvlists_lock;
 
 /* function prototypes for the CAN networklayer procfs (proc.c) */
 void can_init_proc(void);
