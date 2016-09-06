@@ -9,8 +9,7 @@
  * as published by the Free Software Foundation
  */
 
-/*
- * j1939-bus.c - bus for j1939 remote devices
+/* bus for j1939 remote devices
  * Since rtnetlink, no real bus is used.
  */
 
@@ -29,9 +28,7 @@
 	pr_alert("j1939-%i,%016llx,%02x: " fmt, (ecu)->priv->ifindex, \
 		(ecu)->name, (ecu)->sa, ##__VA_ARGS__)
 
-/*
- * ECU device interface
- */
+/* ECU device interface */
 static enum hrtimer_restart j1939_ecu_timer_handler(struct hrtimer *hrtimer)
 {
 	struct j1939_ecu *ecu =

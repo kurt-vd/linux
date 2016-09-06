@@ -25,9 +25,7 @@
 
 #define J1939_MIN_NAMELEN required_size(can_addr.j1939, struct sockaddr_can)
 
-/*
- * list of sockets
- */
+/* list of sockets */
 static struct list_head j1939_socks = LIST_HEAD_INIT(j1939_socks);
 static DEFINE_SPINLOCK(j1939_socks_lock);
 
@@ -54,8 +52,7 @@ struct j1939_sock {
 	struct j1939_filter *filters;
 	int nfilters;
 
-	/*
-	 * j1939 may emit equal PGN (!= equal CAN-id's) out of order
+	/* j1939 may emit equal PGN (!= equal CAN-id's) out of order
 	 * when transport protocol comes in.
 	 * To allow emitting in order, keep a 'pending' nr. of packets
 	 */
@@ -120,8 +117,8 @@ static inline int packet_match(const struct j1939_sk_buff_cb *skcb,
 	if (!nfilter)
 		/* receive all when no filters are assigned */
 		return 1;
-	/*
-	 * Filters relying on the addr for static addressing _should_ get
+
+	/* Filters relying on the addr for static addressing _should_ get
 	 * packets from dynamic addressed ECU's too if they match their SA.
 	 * Sockets using dynamic addressing in their filters should not set it.
 	 */
@@ -154,8 +151,7 @@ static void j1939sk_recv_skb(struct sk_buff *oskb, struct j1939_sock *jsk)
 			/* reject message for other destinations */
 			if (skcb->dstname &&
 				(skcb->dstname != jsk->addr.src))
-				/*
-				 * the msg is not destined for the name
+				/* the msg is not destined for the name
 				 * that the socket is bound to
 				 */
 				return;
@@ -163,8 +159,7 @@ static void j1939sk_recv_skb(struct sk_buff *oskb, struct j1939_sock *jsk)
 			/* reject messages for other destination addresses */
 			if (j1939_address_is_unicast(skcb->dstaddr) &&
 				(skcb->dstaddr != jsk->addr.sa))
-				/*
-				 * the msg is not destined for the name
+				/* the msg is not destined for the name
 				 * that the socket is bound to
 				 */
 				return;
@@ -221,9 +216,7 @@ static int j1939sk_init(struct sock *sk)
 	return 0;
 }
 
-/*
- * helper: return <0 for error, >0 for error to notify
- */
+/* helper: return <0 for error, >0 for error to notify */
 static int j1939_ifindex_start(int ifindex)
 {
 	int ret;
@@ -327,7 +320,8 @@ static int j1939sk_bind(struct socket *sock, struct sockaddr *uaddr, int len)
 fail_locked:
 	if (!jsk->sk.sk_bound_dev_if && jsk->ifindex_started) {
 		/* started j1939 on this netdev during this call,
-		 * so we revert that */
+		 * so we revert that
+		 */
 		j1939_ifindex_stop(jsk->ifindex_started);
 		jsk->ifindex_started = 0;
 	}
@@ -584,8 +578,7 @@ static int j1939sk_getsockopt(struct socket *sock, int level, int optname,
 		goto no_copy;
 	}
 
-	/*
-	 * copy to user, based on 'len' & 'val'
+	/* copy to user, based on 'len' & 'val'
 	 * but most sockopt's are 'int' properties, and have 'len' & 'val'
 	 * left unchanged, but instead modified 'tmp'
 	 */

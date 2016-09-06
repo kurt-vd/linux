@@ -67,16 +67,15 @@ struct session {
 	atomic_t refs;
 	spinlock_t lock;
 
-	struct j1939_sk_buff_cb *cb; /*
-	 * ifindex, src, dst, pgn define the session block
+	/* ifindex, src, dst, pgn define the session block
 	 * the are _never_ modified after insertion in the list
 	 * this decreases locking problems a _lot_
 	 */
+	struct j1939_sk_buff_cb *cb;
 	struct sk_buff *skb;
 	int skb_iif;
 
-	/*
-	 * all tx related stuff (last_txcmd, pkt.tx)
+	/* all tx related stuff (last_txcmd, pkt.tx)
 	 * is protected (modified only) with the txtask tasklet
 	 * 'total' & 'block' are never changed,
 	 * last_cmd, last & block are protected by ->lock
@@ -87,8 +86,7 @@ struct session {
 	uint8_t transmission;
 	uint8_t extd;
 	struct {
-		/*
-		 * these do not require 16 bit, they should fit in uint8_t
+		/* these do not require 16 bit, they should fit in u8
 		 * but putting in int makes it easier to deal with
 		 */
 		unsigned int total, done, last, tx;
@@ -96,7 +94,8 @@ struct session {
 		unsigned int dpo; /* for ETP */
 	} pkt;
 	struct hrtimer txtimer, rxtimer;
-	/* tasklets for execution of tx/rx timer hander in softirq */
+
+	/* tasklets for execution of tx/rx timer handler in softirq */
 	struct tasklet_struct txtask, rxtask;
 };
 
@@ -212,8 +211,7 @@ static inline void sessionlist_unlock(void)
 	spin_unlock_bh(&tp_lock);
 }
 
-/*
- * see if we are receiver
+/* see if we are receiver
  * returns 0 for broadcasts, although we will receive them
  */
 static inline int j1939tp_im_receiver(struct sk_buff *skb)
@@ -269,8 +267,7 @@ static inline unsigned int j1939etp_ctl_to_size(const uint8_t *dat)
 		(dat[2] << 8) | (dat[1] << 0);
 }
 
-/*
- * find existing session:
+/* find existing session:
  * reverse: swap cb's src & dst
  * there is no problem with matching broadcasts, since
  * broadcasts (no dst, no da) would never call this
@@ -474,11 +471,9 @@ static inline void j1939tp_set_rxtimeout(struct session *session, int msec)
 			HRTIMER_MODE_REL);
 }
 
-/*
- * session completion functions
- */
-/*
- * j1939session_drop
+/* session completion functions */
+
+/* j1939session_drop
  * removes a session from open session list
  */
 static inline void j1939session_drop(struct session *session)
@@ -533,9 +528,7 @@ static void j1939tp_rxtask(unsigned long val)
 	put_session(session);
 }
 
-/*
- * receive packet functions
- */
+/* receive packet functions */
 static void _j1939xtp_rx_bad_message(struct sk_buff *skb, int extd)
 {
 	struct session *session;
@@ -579,16 +572,13 @@ static void _j1939xtp_rx_abort(struct sk_buff *skb, int extd)
 	if (!session)
 		return;
 	if (session->transmission && !session->last_txcmd) {
-		/*
-		 * empty block:
+		/* empty block:
 		 * do not drop session when a transmit session did not
 		 * start yet
 		 */
 	} else if (session->cb->pgn == pgn)
 		j1939session_drop(session);
-	/* another PGN had a bad message */
-	/*
-	 * TODO: maybe cancel current connection
+	/* TODO: maybe cancel current connection
 	 * as another pgn was communicated
 	 */
 	put_session(session); /* ~j1939tp_find */
@@ -617,8 +607,7 @@ static void j1939xtp_rx_eof(struct sk_buff *skb, int extd)
 	pgn = j1939xtp_ctl_to_pgn(skb->data);
 	session = j1939tp_find(sessionq(extd), skb, 1);
 	if (!session)
-		/*
-		 * strange, we had EOF on closed connection
+		/* strange, we had EOF on closed connection
 		 * do nothing, as EOF closes the connection anyway
 		 */
 		return;
@@ -706,8 +695,8 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 			skb->skb_iif, cb->srcaddr);
 		return;
 	}
-	/*
-	 * TODO: abort RTS when a similar
+
+	/* TODO: abort RTS when a similar
 	 * TP is pending in the other direction
 	 */
 	session = j1939tp_find(sessionq(extd), skb, 0);
@@ -732,8 +721,7 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 		return;
 	}
 	if (session) {
-		/*
-		 * make sure 'sa' & 'da' are correct !
+		/* make sure 'sa' & 'da' are correct !
 		 * They may be 'not filled in yet' for sending
 		 * skb's, since they did not pass the Address Claim ever.
 		 */
@@ -791,8 +779,8 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 		if (extd || (tp_cmd_bam != dat[0]))
 			j1939session_schedule_txnow(session);
 	}
-	/*
-	 * as soon as it's inserted, things can go fast
+
+	/* as soon as it's inserted, things can go fast
 	 * protect against a long delay
 	 * between spin_unlock & next statement
 	 * so, only release here, at the end
@@ -916,9 +904,7 @@ strange_packet_unlocked:
 	put_session(session); /* ~j1939tp_find */
 }
 
-/*
- * transmit function
- */
+/* transmit function */
 static int j1939tp_txnext(struct session *session)
 {
 	uint8_t dat[8];
@@ -1127,9 +1113,8 @@ static int j1939session_insert(struct session *session)
 	sessionlist_unlock();
 	return pending ? 0 : 1;
 }
-/*
- * j1939 main intf
- */
+
+/* j1939 main intf */
 int j1939_send_transport(struct sk_buff *skb)
 {
 	struct j1939_sk_buff_cb *cb = (void *)skb->cb;
@@ -1199,8 +1184,7 @@ int j1939_send_transport(struct sk_buff *skb)
 	list_del_init(&session->list);
 	sessionlist_unlock();
 failed:
-	/*
-	 * hide the skb from j1939session_drop, as it would
+	/* hide the skb from j1939session_drop, as it would
 	 * kfree_skb, but our caller will kfree_skb(skb) too.
 	 */
 	session->skb = NULL;

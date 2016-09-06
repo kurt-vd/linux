@@ -10,9 +10,7 @@
  * as published by the Free Software Foundation
  */
 
-/*
- * Core of can-j1939 that links j1939 to CAN.
- */
+/* Core of can-j1939 that links j1939 to CAN. */
 
 #include <linux/version.h>
 #include <linux/mutex.h>
@@ -69,8 +67,8 @@ static void j1939_can_recv(struct sk_buff *iskb, void *data)
 	 * j1939 may not touch the incoming skb in such way
 	 */
 	skb = skb_clone(iskb, GFP_ATOMIC);
-	/*
-	 * get a pointer to the header of the skb
+
+	/* get a pointer to the header of the skb
 	 * the skb payload (pointer) is moved, so that the next skb_data
 	 * returns the actual payload
 	 */
@@ -183,9 +181,8 @@ failed:
 }
 EXPORT_SYMBOL_GPL(j1939_send);
 
-/*
- * iterate over ECU's,
- * and register flagged ecu's on their claimed SA
+/* iterate over ECUs,
+ * and register flagged ECUs on their claimed SA
  */
 static void j1939_priv_ac_task(unsigned long val)
 {
@@ -299,9 +296,7 @@ void j1939_netdev_stop(struct net_device *netdev)
 	dev_put(netdev);
 }
 
-/*
- * device interface
- */
+/* device interface */
 static void on_put_j1939_priv(struct kref *kref)
 {
 	struct j1939_priv *priv = container_of(kref, struct j1939_priv, kref);

@@ -9,8 +9,7 @@
  * as published by the Free Software Foundation
  */
 
-/*
- * J1939 Address Claiming.
+/* J1939 Address Claiming.
  * Address Claiming in the kernel
  * - keeps track of the AC states of ECU's,
  * - resolves NAME<=>SA taking into account the AC states of ECU's.
@@ -189,9 +188,7 @@ void j1939_recv_address_claim(struct sk_buff *skb, struct j1939_priv *priv)
 	struct j1939_sk_buff_cb *skcb = (void *)skb->cb;
 	struct j1939_ecu *ecu;
 
-	/*
-	 * network mgmt
-	 */
+	/* network mgmt */
 	if (skcb->pgn == PGN_ADDRESS_CLAIMED)
 		j1939_process_address_claim(skb);
 	else if (j1939_address_is_unicast(skcb->srcaddr)) {

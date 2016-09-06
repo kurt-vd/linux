@@ -178,8 +178,7 @@ struct sockaddr_can {
 		struct {
 			/* 8 byte name when using dynamic addressing */
 			__u64 name;
-			/*
-			 * pgn:
+			/* pgn:
 			 * 8bit: PS in PDU2 case, else 0
 			 * 8bit: PF
 			 * 1bit: DP

@@ -31,16 +31,15 @@
 #define PGN_MAX			0x3ffff
 
 #define SA_MAX_UNICAST	0xfd
-/*
- * j1939 devices
- */
+
+/* j1939 devices */
 struct j1939_ecu {
 	struct list_head list;
 	ktime_t rxtime;
 	name_t name;
 	uint8_t sa;
-	/*
-	 * atomic flag, set by ac_timer
+
+	/* atomic flag, set by ac_timer
 	 * cleared/processed by segment's tasklet
 	 * indicates that this ecu successfully claimed @sa as its address
 	 * By communicating this from the ac_timer event to segments tasklet,
@@ -57,8 +56,8 @@ struct j1939_ecu {
 #define to_j1939_ecu(x) container_of((x), struct j1939_ecu, dev)
 
 struct j1939_priv {
-	struct list_head ecus; /*
-	 * local list entry in priv
+	struct list_head ecus;
+	/* local list entry in priv
 	 * These allow irq (& softirq) context lookups on j1939 devices
 	 * This approach (separate lists) is done as the other 2 alternatives
 	 * are not easier or even wrong
@@ -68,9 +67,10 @@ struct j1939_priv {
 	 *    code
 	 * usage:
 	 */
-	rwlock_t lock; /*
-	 * segments need a lock to protect the above list
-	 */
+
+	/* segments need a lock to protect the above list */
+	rwlock_t lock;
+
 	int ifindex;
 	struct net_device *netdev;
 	struct addr_ent {
@@ -80,21 +80,20 @@ struct j1939_priv {
 		int nusers;
 	} ents[256];
 
-	/*
-	 * tasklet to process ecu address claimed events.
+	/* tasklet to process ecu address claimed events.
 	 * These events raise in hardirq context. Signalling the event
 	 * and scheduling this tasklet successfully moves the
 	 * event to softirq context
 	 */
 	struct tasklet_struct ac_task;
-	/*
-	 * list of 256 ecu ptrs, that cache the claimed addresses.
+
+	/* list of 256 ecu ptrs, that cache the claimed addresses.
 	 * also protected by the above lock
 	 * don't use directly, use j1939_ecu_set_address() instead
 	 */
 	struct kref kref;
-	/*
-	 * ref counter that hold the number of active listeners.
+
+	/* ref counter that hold the number of active listeners.
 	 * This number itself is protected with a mutex
 	 */
 	int nusers;
@@ -118,8 +117,7 @@ extern void j1939_addr_local_put(struct j1939_priv *priv, int sa);
 extern void j1939_name_local_get(struct j1939_priv *priv, uint64_t name);
 extern void j1939_name_local_put(struct j1939_priv *priv, uint64_t name);
 
-/*
- * conversion function between (struct sock | struct sk_buff)->sk_priority
+/* conversion function between (struct sock | struct sk_buff)->sk_priority
  * from linux and j1939 priority field
  */
 static inline int j1939_prio(int sk_priority)
@@ -211,8 +209,7 @@ struct j1939_sk_buff_cb {
 	name_t srcname;
 	name_t dstname;
 
-	/*
-	 * Flags for quick lookups during skb processing
+	/* Flags for quick lookups during skb processing
 	 * These are set in the receive path only
 	 */
 	int srcflags;
@@ -245,8 +242,8 @@ extern int j1939_fixup_address_claim(struct sk_buff *);
 extern void j1939_recv_address_claim(struct sk_buff *, struct j1939_priv *priv);
 
 /* network management */
-/*
- * j1939_ecu_get_register
+
+/* j1939_ecu_get_register
  * 'create' & 'register' & 'get' new ecu
  * when a matching ecu already exists, then that is returned
  */
@@ -291,9 +288,7 @@ static inline struct j1939_priv *j1939_priv_find(int ifindex)
 extern void j1939sk_netdev_event(int ifindex, int error_code);
 extern int j1939tp_rmdev_notifier(struct net_device *netdev);
 
-/*
- * decrement pending skb for a j1939 socket
- */
+/* decrement pending skb for a j1939 socket */
 extern void j1939_sock_pending_del(struct sock *sk);
 
 /* seperate module-init/modules-exit's */

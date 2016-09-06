@@ -19,8 +19,8 @@
 #define J1939_NO_ADDR	0xff
 #define J1939_NO_NAME	0
 #define J1939_NO_PGN	0x40000
-/*
- * J1939 Parameter Group Number
+
+/* J1939 Parameter Group Number
  *
  * bit 0-7	: PDU Specific (PS)
  * bit 8-15	: PDU Format (PF)
@@ -30,16 +30,14 @@
  */
 typedef __u32 pgn_t;
 
-/*
- * J1939 Priority
+/* J1939 Priority
  *
  * bit 0-2	: Priority (P)
  * bit 3-7	: set to zero
  */
 typedef __u8 priority_t;
 
-/*
- * J1939 NAME
+/* J1939 NAME
  *
  * bit 0-20	: Identity Number
  * bit 21-31	: Manufacturer Code
@@ -54,9 +52,7 @@ typedef __u8 priority_t;
  */
 typedef __u64 name_t;
 
-/*
- * J1939 socket options
- */
+/* J1939 socket options */
 #define SOL_CAN_J1939 (SOL_CAN_BASE + CAN_J1939)
 enum {
 	SO_J1939_FILTER = 1,	/* set filters */
@@ -80,9 +76,7 @@ struct j1939_filter {
 	pgn_t pgn_mask;
 };
 
-/*
- * RTNETLINK
- */
+/* RTNETLINK */
 enum {
 	IFLA_J1939_UNSPEC,
 	IFLA_J1939_ENABLE,
