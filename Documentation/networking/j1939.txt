@@ -139,7 +139,7 @@ This file contains
   set elsewhere.
 
   Regarding PGN mapping to 29-bit CAN identifier, the Destination Address
-  shall be get/set from/to the apropriate bits of the identifier by the kernel.
+  shall be get/set from/to the appropriate bits of the identifier by the kernel.
 
 
 3.2 addressing
@@ -158,7 +158,7 @@ This file contains
   reception.
 
   Mixed mode packets (from a static to a dynamic address or vice versa) are
-  allowed. The BSD sockets define seperate API calls for getting/setting the
+  allowed. The BSD sockets define separate API calls for getting/setting the
   local & remote address and are applicable for J1939 sockets.
 
 
@@ -338,7 +338,7 @@ This file contains
 
   Afterwards do a write(2) with data set to the NAME (Little Endian). If the
   NAME provided, does not match the j1939.name provided to bind(2), EPROTO
-  will be returned. One might use sendto(2) also to send the Addres Claim. In
+  will be returned. One might use sendto(2) also to send the Address Claim. In
   that case, the j1939.addr member must be set to the broadcast address (255)
   and the j1939.pgn must be set to 0x0ee00. If This combination is not given,
   EPROTO is returned.

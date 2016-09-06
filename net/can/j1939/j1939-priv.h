@@ -60,7 +60,7 @@ struct j1939_priv {
 	struct list_head ecus; /*
 	 * local list entry in priv
 	 * These allow irq (& softirq) context lookups on j1939 devices
-	 * This approach (seperate lists) is done as the other 2 alternatives
+	 * This approach (separate lists) is done as the other 2 alternatives
 	 * are not easier or even wrong
 	 * 1) using the pure kobject methods involves mutexes, which are not
 	 *    allowed in irq context.

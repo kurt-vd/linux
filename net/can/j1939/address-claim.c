@@ -79,7 +79,7 @@ int j1939_fixup_address_claim(struct sk_buff *skb)
 		struct j1939_ecu *ecu;
 
 		ret = j1939_verify_outgoing_address_claim(skb);
-		/* return both when failure & when successfull */
+		/* return both when failure & when successful */
 		if (ret < 0)
 			return ret;
 		ecu = j1939_ecu_find_by_name(skcb->srcname,
