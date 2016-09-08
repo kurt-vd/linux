@@ -50,7 +50,7 @@
 static unsigned int block = 255;
 static unsigned int max_packet_size = 1024*100;
 static unsigned int retry_ms = 20;
-static unsigned int packet_delay = 0;
+static unsigned int packet_delay;
 
 module_param_named(transport_burst_count, block, uint, 0644);
 module_param_named(transport_max_size, max_packet_size, uint, 0644);

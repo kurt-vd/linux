@@ -41,7 +41,7 @@ struct proc_dir_entry *j1939_procdir;
 #define CAN_FTR	(sizeof(struct can_frame)-CAN_HDR-\
 		sizeof(((struct can_frame *)0)->data))
 
-static unsigned int padding = 0;
+static unsigned int padding;
 
 module_param_named(padding, padding, uint, 0644);
 
