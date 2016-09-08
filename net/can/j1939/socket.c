@@ -523,8 +523,7 @@ static int j1939sk_setsockopt(struct socket *sock, int level, int optname,
 		jsk->filters = filters;
 		jsk->nfilters = count;
 		spin_unlock_bh(&j1939_socks_lock);
-		if (ofilters)
-			kfree(ofilters);
+		kfree(ofilters);
 		return 0;
 	case SO_J1939_PROMISC:
 		return j1939sk_setsockopt_flag(jsk, optval, optlen, PROMISC);
