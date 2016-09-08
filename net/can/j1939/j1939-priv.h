@@ -100,8 +100,8 @@ struct j1939_priv {
 };
 #define to_j1939_priv(x) container_of((x), struct j1939_priv, dev)
 
-extern void put_j1939_ecu(struct j1939_ecu *ecu);
-extern void put_j1939_priv(struct j1939_priv *segment);
+void put_j1939_ecu(struct j1939_ecu *ecu);
+void put_j1939_priv(struct j1939_priv *segment);
 static inline void get_j1939_ecu(struct j1939_ecu *dut)
 {
 	kref_get(&dut->kref);
@@ -232,14 +232,14 @@ static inline int j1939cb_is_broadcast(const struct j1939_sk_buff_cb *skcb)
 	return (!skcb->dstname && (skcb->dstaddr >= 0xff));
 }
 
-extern int j1939_send(struct sk_buff *);
-extern void j1939_recv(struct sk_buff *);
+int j1939_send(struct sk_buff *);
+void j1939_recv(struct sk_buff *);
 
 /* stack entries */
-extern int j1939_send_transport(struct sk_buff *);
-extern int j1939_recv_transport(struct sk_buff *);
-extern int j1939_fixup_address_claim(struct sk_buff *);
-extern void j1939_recv_address_claim(struct sk_buff *, struct j1939_priv *priv);
+int j1939_send_transport(struct sk_buff *);
+int j1939_recv_transport(struct sk_buff *);
+int j1939_fixup_address_claim(struct sk_buff *);
+void j1939_recv_address_claim(struct sk_buff *, struct j1939_priv *priv);
 
 /* network management */
 
@@ -250,10 +250,10 @@ extern void j1939_recv_address_claim(struct sk_buff *, struct j1939_priv *priv);
 extern struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv,
 		name_t name, int create_if_necessary);
 /* unregister must be called with lock held */
-extern void _j1939_ecu_unregister(struct j1939_ecu *);
+void _j1939_ecu_unregister(struct j1939_ecu *);
 
-extern int j1939_netdev_start(struct net_device *);
-extern void j1939_netdev_stop(struct net_device *);
+int j1939_netdev_start(struct net_device *);
+void j1939_netdev_stop(struct net_device *);
 
 static inline struct j1939_priv *dev_j1939_priv(struct net_device *dev)
 {
@@ -285,16 +285,16 @@ static inline struct j1939_priv *j1939_priv_find(int ifindex)
 }
 
 /* notify/alert all j1939 sockets bound to ifindex */
-extern void j1939sk_netdev_event(int ifindex, int error_code);
-extern int j1939tp_rmdev_notifier(struct net_device *netdev);
+void j1939sk_netdev_event(int ifindex, int error_code);
+int j1939tp_rmdev_notifier(struct net_device *netdev);
 
 /* decrement pending skb for a j1939 socket */
-extern void j1939_sock_pending_del(struct sock *sk);
+void j1939_sock_pending_del(struct sock *sk);
 
-/* seperate module-init/modules-exit's */
-extern __init int j1939tp_module_init(void);
+/* separate module-init/modules-exit's */
+__init int j1939tp_module_init(void);
 
-extern void j1939tp_module_exit(void);
+void j1939tp_module_exit(void);
 
 /* CAN protocol */
 extern const struct can_proto j1939_can_proto;
