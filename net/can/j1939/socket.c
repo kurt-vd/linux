@@ -108,6 +108,7 @@ void j1939_sock_pending_del(struct sock *sk)
 static inline int j1939_no_address(const struct sock *sk)
 {
 	const struct j1939_sock *jsk = j1939_sk(sk);
+
 	return (jsk->addr.sa == J1939_NO_ADDR) && !jsk->addr.src;
 }
 
@@ -304,7 +305,6 @@ static int j1939sk_bind(struct socket *sock, struct sockaddr *uaddr, int len)
 	jsk->addr.src = addr->can_addr.j1939.name;
 	jsk->addr.sa = addr->can_addr.j1939.addr;
 
-
 	/* set default transmit pgn */
 	if (pgn_is_valid(addr->can_addr.j1939.pgn))
 		jsk->addr.pgn = addr->can_addr.j1939.pgn;
@@ -351,6 +351,7 @@ static int j1939sk_connect(struct socket *sock, struct sockaddr *uaddr,
 
 	/* bind to device ... */
 	bound_dev_if = jsk->sk.sk_bound_dev_if;
+
 	/* copy netdev info */
 	if (!bound_dev_if && addr->can_ifindex)
 		bound_dev_if = addr->can_ifindex;
@@ -361,6 +362,7 @@ static int j1939sk_connect(struct socket *sock, struct sockaddr *uaddr,
 			goto fail_locked;
 		}
 	}
+
 	/* start j1939 */
 	if (bound_dev_if && bound_dev_if != jsk->ifindex_started) {
 		if (jsk->ifindex_started) {

@@ -50,9 +50,11 @@ struct j1939_ecu {
 	struct hrtimer ac_timer;
 	struct kref kref;
 	struct j1939_priv *priv;
+
 	/* count users, to help transport protocol decide for interaction */
 	int nusers;
 };
+
 #define to_j1939_ecu(x) container_of((x), struct j1939_ecu, dev)
 
 struct j1939_priv {
@@ -98,14 +100,17 @@ struct j1939_priv {
 	 */
 	int nusers;
 };
+
 #define to_j1939_priv(x) container_of((x), struct j1939_priv, dev)
 
 void put_j1939_ecu(struct j1939_ecu *ecu);
 void put_j1939_priv(struct j1939_priv *segment);
+
 static inline void get_j1939_ecu(struct j1939_ecu *dut)
 {
 	kref_get(&dut->kref);
 }
+
 static inline void get_j1939_priv(struct j1939_priv *dut)
 {
 	kref_get(&dut->kref);
@@ -129,6 +134,7 @@ static inline int j1939_prio(int sk_priority)
 	else
 		return 7 - sk_priority;
 }
+
 static inline int j1939_to_sk_priority(int j1939_prio)
 {
 	return 7 - j1939_prio;
@@ -214,9 +220,12 @@ struct j1939_sk_buff_cb {
 	 */
 	int srcflags;
 	int dstflags;
+
 #define ECU_LOCAL 1
+
 	/* for tx, MSG_SYN will be used to sync on sockets */
 	int msg_flags;
+
 	/* j1939 clones incoming skb's.
 	 * insock saves the incoming skb->sk
 	 * to determine local generated packets
@@ -249,6 +258,7 @@ void j1939_recv_address_claim(struct sk_buff *, struct j1939_priv *priv);
  */
 struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv,
 					  name_t name, int create_if_necessary);
+
 /* unregister must be called with lock held */
 void _j1939_ecu_unregister(struct j1939_ecu *);
 
@@ -267,8 +277,10 @@ static inline struct j1939_priv *dev_j1939_priv(struct net_device *dev)
 
 	can_ml_priv = dev->ml_priv;
 	priv = can_ml_priv ? can_ml_priv->j1939_priv : NULL;
+
 	if (priv)
 		get_j1939_priv(priv);
+
 	return priv;
 }
 
@@ -279,8 +291,10 @@ static inline struct j1939_priv *j1939_priv_find(int ifindex)
 
 	netdev = dev_get_by_index(&init_net, ifindex);
 	priv = dev_j1939_priv(netdev);
+
 	if (netdev)
 		dev_put(netdev);
+
 	return priv;
 }
 

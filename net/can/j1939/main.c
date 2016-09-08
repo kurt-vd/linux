@@ -75,12 +75,14 @@ static void j1939_can_recv(struct sk_buff *iskb, void *data)
 	 */
 	cf = (void *)skb->data;
 	skb_pull(skb, CAN_HDR);
+
 	/* fix length, set to dlc, with 8 maximum */
 	skb_trim(skb, min_t(uint8_t, cf->can_dlc, 8));
 
 	/* set addr */
 	skcb = (struct j1939_sk_buff_cb *)skb->cb;
 	memset(skcb, 0, sizeof(*skcb));
+
 	/* save incoming socket, without assigning the skb to it */
 	skcb->insock = iskb->sk;
 	skcb->priority = (cf->can_id & 0x1c000000) >> 26;
@@ -195,6 +197,7 @@ static void j1939_priv_ac_task(unsigned long val)
 		/* next 2 (read & set) could be merged into xxx? */
 		if (!atomic_read(&ecu->ac_delay_expired))
 			continue;
+
 		atomic_set(&ecu->ac_delay_expired, 0);
 		if (j1939_address_is_unicast(ecu->sa)) {
 			ecu->priv->ents[ecu->sa].ecu = ecu;

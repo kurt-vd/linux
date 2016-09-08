@@ -208,6 +208,7 @@ void j1939_name_local_get(struct j1939_priv *priv, u64 name)
 
 	if (!name)
 		return;
+
 	write_lock_bh(&priv->lock);
 	ecu = _j1939_ecu_get_register(priv, name, 1);
 	if (!IS_ERR(ecu)) {
@@ -226,6 +227,7 @@ void j1939_name_local_put(struct j1939_priv *priv, u64 name)
 
 	if (!name)
 		return;
+
 	write_lock_bh(&priv->lock);
 	ecu = _j1939_ecu_get_register(priv, name, 0);
 	if (!IS_ERR(ecu)) {
@@ -237,4 +239,3 @@ void j1939_name_local_put(struct j1939_priv *priv, u64 name)
 	}
 	write_unlock_bh(&priv->lock);
 }
-
