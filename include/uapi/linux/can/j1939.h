@@ -8,8 +8,8 @@
  * published by the Free Software Foundation.
  */
 
-#ifndef _J1939_H_
-#define _J1939_H_
+#ifndef _UAPI_CAN_J1939_H_
+#define _UAPI_CAN_J1939_H_
 
 #include <linux/types.h>
 #include <linux/socket.h>
@@ -96,4 +96,4 @@ enum {
 	IFA_J1939_MAX,
 };
 
-#endif /* _J1939_H_ */
+#endif /* !_UAPI_CAN_J1939_H_ */
