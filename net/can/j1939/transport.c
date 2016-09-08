@@ -561,7 +561,6 @@ static void j1939xtp_rx_bad_message(struct sk_buff *skb, int extd)
 	_j1939xtp_rx_bad_message(skb, extd);
 	/* restore skb */
 	j1939_skbcb_swap(cb);
-	return;
 }
 
 static void _j1939xtp_rx_abort(struct sk_buff *skb, int extd)
@@ -597,7 +596,6 @@ static inline void j1939xtp_rx_abort(struct sk_buff *skb, int extd)
 	_j1939xtp_rx_abort(skb, extd);
 	/* restore skb */
 	j1939_skbcb_swap(cb);
-	return;
 }
 
 static void j1939xtp_rx_eof(struct sk_buff *skb, int extd)
@@ -788,7 +786,6 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 	 * so, only release here, at the end
 	 */
 	put_session(session); /* ~j1939tp_find */
-	return;
 }
 
 static void j1939xtp_rx_dpo(struct sk_buff *skb, int extd)
