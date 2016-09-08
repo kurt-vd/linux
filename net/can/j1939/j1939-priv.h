@@ -37,7 +37,7 @@ struct j1939_ecu {
 	struct list_head list;
 	ktime_t rxtime;
 	name_t name;
-	uint8_t sa;
+	u8 sa;
 
 	/* atomic flag, set by ac_timer
 	 * cleared/processed by segment's tasklet
@@ -112,10 +112,10 @@ static inline void get_j1939_priv(struct j1939_priv *dut)
 }
 
 /* keep the cache of what is local */
-extern void j1939_addr_local_get(struct j1939_priv *priv, int sa);
-extern void j1939_addr_local_put(struct j1939_priv *priv, int sa);
-extern void j1939_name_local_get(struct j1939_priv *priv, uint64_t name);
-extern void j1939_name_local_put(struct j1939_priv *priv, uint64_t name);
+void j1939_addr_local_get(struct j1939_priv *priv, int sa);
+void j1939_addr_local_put(struct j1939_priv *priv, int sa);
+void j1939_name_local_get(struct j1939_priv *priv, u64 name);
+void j1939_name_local_put(struct j1939_priv *priv, u64 name);
 
 /* conversion function between (struct sock | struct sk_buff)->sk_priority
  * from linux and j1939 priority field
@@ -134,12 +134,12 @@ static inline int j1939_to_sk_priority(int j1939_prio)
 	return 7 - j1939_prio;
 }
 
-static inline int j1939_address_is_valid(uint8_t sa)
+static inline int j1939_address_is_valid(u8 sa)
 {
 	return sa != J1939_NO_ADDR;
 }
 
-static inline int j1939_address_is_unicast(uint8_t sa)
+static inline int j1939_address_is_unicast(u8 sa)
 {
 	return sa <= SA_MAX_UNICAST;
 }
@@ -175,12 +175,12 @@ static inline void j1939_ecu_remove_sa(struct j1939_ecu *ecu)
 	write_unlock_bh(&ecu->priv->lock);
 }
 
-extern int j1939_name_to_sa(uint64_t name, int ifindex);
-extern struct j1939_ecu *j1939_ecu_find_by_addr(int sa, int ifindex);
-extern struct j1939_ecu *j1939_ecu_find_by_name(name_t name, int ifindex);
+int j1939_name_to_sa(u64 name, int ifindex);
+struct j1939_ecu *j1939_ecu_find_by_addr(int sa, int ifindex);
+struct j1939_ecu *j1939_ecu_find_by_name(name_t name, int ifindex);
 /* find_by_name, with kref & read_lock taken */
-extern struct j1939_ecu *j1939_ecu_find_priv_default_tx(
-		int ifindex, name_t *pname, uint8_t *paddr);
+struct j1939_ecu *j1939_ecu_find_priv_default_tx(int ifindex, name_t *pname,
+						 u8 *paddr);
 
 extern struct proc_dir_entry *j1939_procdir;
 extern const char j1939_procname[];
@@ -204,8 +204,8 @@ struct sk_buff;
 struct j1939_sk_buff_cb {
 	pgn_t pgn;
 	priority_t priority;
-	uint8_t srcaddr;
-	uint8_t dstaddr;
+	u8 srcaddr;
+	u8 dstaddr;
 	name_t srcname;
 	name_t dstname;
 

@@ -114,7 +114,7 @@ struct j1939_ecu *j1939_ecu_find_by_addr(int sa, int ifindex)
 	return ecu;
 }
 
-int j1939_name_to_sa(uint64_t name, int ifindex)
+int j1939_name_to_sa(u64 name, int ifindex)
 {
 	struct j1939_ecu *ecu;
 	struct j1939_priv *priv;
@@ -201,7 +201,7 @@ void j1939_addr_local_put(struct j1939_priv *priv, int sa)
 	write_unlock_bh(&priv->lock);
 }
 
-void j1939_name_local_get(struct j1939_priv *priv, uint64_t name)
+void j1939_name_local_get(struct j1939_priv *priv, u64 name)
 {
 	struct j1939_ecu *ecu;
 
@@ -219,7 +219,7 @@ void j1939_name_local_get(struct j1939_priv *priv, uint64_t name)
 	write_unlock_bh(&priv->lock);
 }
 
-void j1939_name_local_put(struct j1939_priv *priv, uint64_t name)
+void j1939_name_local_put(struct j1939_priv *priv, u64 name)
 {
 	struct j1939_ecu *ecu;
 

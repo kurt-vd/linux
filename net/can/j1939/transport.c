@@ -82,9 +82,9 @@ struct session {
 	 * this means that the tx may run after cts is received that should
 	 * have stopped tx, but this time discrepancy is never avoided anyhow
 	 */
-	uint8_t last_cmd, last_txcmd;
-	uint8_t transmission;
-	uint8_t extd;
+	u8 last_cmd, last_txcmd;
+	u8 transmission;
+	u8 extd;
 	struct {
 		/* these do not require 16 bit, they should fit in u8
 		 * but putting in int makes it easier to deal with
@@ -243,7 +243,7 @@ static int j1939tp_im_involved_anydir(struct sk_buff *skb)
 }
 
 /* extract pgn from flow-ctl message */
-static inline pgn_t j1939xtp_ctl_to_pgn(const uint8_t *dat)
+static inline pgn_t j1939xtp_ctl_to_pgn(const u8 *dat)
 {
 	pgn_t pgn;
 
@@ -253,15 +253,17 @@ static inline pgn_t j1939xtp_ctl_to_pgn(const uint8_t *dat)
 	return pgn;
 }
 
-static inline unsigned int j1939tp_ctl_to_size(const uint8_t *dat)
+static inline unsigned int j1939tp_ctl_to_size(const u8 *dat)
 {
 	return (dat[2] << 8) + (dat[1] << 0);
 }
-static inline unsigned int j1939etp_ctl_to_packet(const uint8_t *dat)
+
+static inline unsigned int j1939etp_ctl_to_packet(const u8 *dat)
 {
 	return (dat[4] << 16) | (dat[3] << 8) | (dat[2] << 0);
 }
-static inline unsigned int j1939etp_ctl_to_size(const uint8_t *dat)
+
+static inline unsigned int j1939etp_ctl_to_size(const u8 *dat)
 {
 	return (dat[4] << 24) | (dat[3] << 16) |
 		(dat[2] << 8) | (dat[1] << 0);
@@ -333,7 +335,7 @@ static struct session *j1939tp_find(struct list_head *root,
 static void j1939_skbcb_swap(struct j1939_sk_buff_cb *cb)
 {
 	name_t name;
-	uint8_t addr;
+	u8 addr;
 	int flags;
 
 	name = cb->dstname;
@@ -350,11 +352,11 @@ static void j1939_skbcb_swap(struct j1939_sk_buff_cb *cb)
 }
 /* TP transmit packet functions */
 static int j1939tp_tx_dat(struct sk_buff *related, int extd,
-		const uint8_t *dat, int len)
+			  const u8 *dat, int len)
 {
 	struct sk_buff *skb;
 	struct j1939_sk_buff_cb *skb_cb;
-	uint8_t *skdat;
+	u8 *skdat;
 
 	skb = alloc_skb(sizeof(struct can_frame) + sizeof(struct can_skb_priv),
 			GFP_ATOMIC);
@@ -384,11 +386,11 @@ static int j1939tp_tx_dat(struct sk_buff *related, int extd,
 }
 
 static int j1939xtp_do_tx_ctl(struct sk_buff *related, int extd,
-		int swap_src_dst, pgn_t pgn, const uint8_t dat[5])
+			      int swap_src_dst, pgn_t pgn, const u8 dat[5])
 {
 	struct sk_buff *skb;
 	struct j1939_sk_buff_cb *skb_cb;
-	uint8_t *skdat;
+	u8 *skdat;
 
 	if (!j1939tp_im_involved(related, swap_src_dst))
 		return 0;
@@ -425,7 +427,7 @@ static int j1939xtp_do_tx_ctl(struct sk_buff *related, int extd,
 }
 
 static inline int j1939tp_tx_ctl(struct session *session,
-		int swap_src_dst, const uint8_t dat[8])
+				 int swap_src_dst, const u8 dat[8])
 {
 	return j1939xtp_do_tx_ctl(session->skb, session->extd, swap_src_dst,
 			session->cb->pgn, dat);
@@ -434,7 +436,7 @@ static inline int j1939tp_tx_ctl(struct session *session,
 static int j1939xtp_tx_abort(struct sk_buff *related, int extd,
 		int swap_src_dst, int err, pgn_t pgn)
 {
-	uint8_t dat[5];
+	u8 dat[5];
 
 	if (!j1939tp_im_involved(related, swap_src_dst))
 		return 0;
@@ -627,7 +629,7 @@ static void j1939xtp_rx_cts(struct sk_buff *skb, int extd)
 	struct session *session;
 	pgn_t pgn;
 	unsigned int pkt;
-	const uint8_t *dat;
+	const u8 *dat;
 
 	dat = skb->data;
 	pgn = j1939xtp_ctl_to_pgn(skb->data);
@@ -684,7 +686,7 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 	struct j1939_sk_buff_cb *cb = (void *)skb->cb;
 	struct session *session;
 	int len;
-	const uint8_t *dat;
+	const u8 *dat;
 	pgn_t pgn;
 
 	dat = skb->data;
@@ -793,7 +795,7 @@ static void j1939xtp_rx_dpo(struct sk_buff *skb, int extd)
 {
 	struct session *session;
 	pgn_t pgn;
-	const uint8_t *dat = skb->data;
+	const u8 *dat = skb->data;
 
 	pgn = j1939xtp_ctl_to_pgn(dat);
 	session = j1939tp_find(sessionq(extd), skb, 0);
@@ -819,8 +821,8 @@ static void j1939xtp_rx_dpo(struct sk_buff *skb, int extd)
 static void j1939xtp_rx_dat(struct sk_buff *skb, int extd)
 {
 	struct session *session;
-	const uint8_t *dat;
-	uint8_t *tpdat;
+	const u8 *dat;
+	u8 *tpdat;
 	int offset;
 	int nbytes;
 	int final;
@@ -907,8 +909,8 @@ strange_packet_unlocked:
 /* transmit function */
 static int j1939tp_txnext(struct session *session)
 {
-	uint8_t dat[8];
-	const uint8_t *tpdat;
+	u8 dat[8];
+	const u8 *tpdat;
 	int ret, offset, pkt_done, pkt_end;
 	unsigned int pkt, len, pdelay;
 
@@ -1195,7 +1197,7 @@ failed:
 int j1939_recv_transport(struct sk_buff *skb)
 {
 	struct j1939_sk_buff_cb *cb = (void *)skb->cb;
-	const uint8_t *dat;
+	const u8 *dat;
 
 	switch (cb->pgn) {
 	case etp_pgn_dat:

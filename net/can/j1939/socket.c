@@ -46,7 +46,7 @@ struct j1939_sock {
 		name_t dst;
 		pgn_t pgn;
 
-		uint8_t sa, da;
+		u8 sa, da;
 	} addr;
 
 	struct j1939_filter *filters;
