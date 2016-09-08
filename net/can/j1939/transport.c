@@ -1385,7 +1385,7 @@ static int j1939tp_proc_show_session(struct seq_file *sqf,
 	else if (j1939_address_is_unicast(session->cb->dstaddr))
 		seq_printf(sqf, "\t%02x", session->cb->dstaddr);
 	else
-		seq_printf(sqf, "\t-");
+		seq_puts(sqf, "\t-");
 	seq_printf(sqf, "\t%05x\t%u/%u\n", session->cb->pgn,
 		   session->pkt.done * 7, session->skb->len);
 	return 0;
@@ -1395,7 +1395,7 @@ static int j1939tp_proc_show(struct seq_file *sqf, void *v)
 {
 	struct session *session;
 
-	seq_printf(sqf, "iface\tsrc\tdst\tpgn\tdone/total\n");
+	seq_puts(sqf, "iface\tsrc\tdst\tpgn\tdone/total\n");
 	sessionlist_lock();
 	list_for_each_entry(session, &tp_sessionq, list)
 		j1939tp_proc_show_session(sqf, session);

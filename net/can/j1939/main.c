@@ -360,7 +360,7 @@ static int j1939_proc_show_addr(struct seq_file *sqf, void *v)
 	struct j1939_priv *priv;
 	int j;
 
-	seq_printf(sqf, "iface\tsa\t#users\n");
+	seq_puts(sqf, "iface\tsa\t#users\n");
 	rcu_read_lock();
 	for_each_netdev_rcu(&init_net, netdev) {
 		priv = dev_j1939_priv(netdev);
@@ -385,7 +385,7 @@ static int j1939_proc_show_name(struct seq_file *sqf, void *v)
 	struct j1939_priv *priv;
 	struct j1939_ecu *ecu;
 
-	seq_printf(sqf, "iface\tname\tsa\t#users\n");
+	seq_puts(sqf, "iface\tname\tsa\t#users\n");
 	rcu_read_lock();
 	for_each_netdev_rcu(&init_net, netdev) {
 		priv = dev_j1939_priv(netdev);
