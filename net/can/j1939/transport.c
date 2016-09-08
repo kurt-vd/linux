@@ -765,7 +765,8 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 			session->pkt.total = dat[3];
 			session->pkt.block = dat[4];
 		}
-		session->pkt.done = session->pkt.tx = 0;
+		session->pkt.done = 0;
+		session->pkt.tx = 0;
 		get_session(session); /* equivalent to j1939tp_find() */
 		sessionlist_lock();
 		list_add_tail(&session->list, sessionq(extd));
