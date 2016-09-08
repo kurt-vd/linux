@@ -44,7 +44,8 @@ struct j1939_sock {
 	int ifindex_started; /* ifindex of netdev */
 
 	struct {
-		name_t src, dst;
+		name_t src;
+		name_t dst;
 		pgn_t pgn;
 
 		uint8_t sa, da;
