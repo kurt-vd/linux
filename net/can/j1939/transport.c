@@ -288,25 +288,30 @@ static int j1939tp_match(struct session *session, struct sk_buff *skb,
 		if (session->cb->srcname) {
 			if (session->cb->srcname != cb->srcname)
 				return 0;
-		} else if (session->cb->srcaddr != cb->srcaddr)
+		} else if (session->cb->srcaddr != cb->srcaddr) {
 			return 0;
+		}
 
 		if (session->cb->dstname) {
 			if (session->cb->dstname != cb->dstname)
 				return 0;
-		} else if (session->cb->dstaddr != cb->dstaddr)
+		} else if (session->cb->dstaddr != cb->dstaddr) {
 			return 0;
+		}
 	} else {
 		if (session->cb->srcname) {
 			if (session->cb->srcname != cb->dstname)
 				return 0;
-		} else if (session->cb->srcaddr != cb->dstaddr)
+		} else if (session->cb->srcaddr != cb->dstaddr) {
 			return 0;
+		}
+
 		if (session->cb->dstname) {
 			if (session->cb->dstname != cb->srcname)
 				return 0;
-		} else if (session->cb->dstaddr != cb->srcaddr)
+		} else if (session->cb->dstaddr != cb->srcaddr) {
 			return 0;
+		}
 	}
 
 	return 1;
@@ -593,8 +598,9 @@ static void _j1939xtp_rx_abort(struct sk_buff *skb, int extd)
 		 * do not drop session when a transmit session did not
 		 * start yet
 		 */
-	} else if (session->cb->pgn == pgn)
+	} else if (session->cb->pgn == pgn) {
 		j1939session_drop(session);
+	}
 
 	/* TODO: maybe cancel current connection
 	 * as another pgn was communicated
@@ -626,11 +632,12 @@ static void j1939xtp_rx_eof(struct sk_buff *skb, int extd)
 	/* end of tx cycle */
 	pgn = j1939xtp_ctl_to_pgn(skb->data);
 	session = j1939tp_find(sessionq(extd), skb, 1);
-	if (!session)
+	if (!session) {
 		/* strange, we had EOF on closed connection
 		 * do nothing, as EOF closes the connection anyway
 		 */
 		return;
+	}
 
 	if (session->cb->pgn != pgn) {
 		j1939xtp_tx_abort(skb, extd, 1, ABORT_BUSY, pgn);
@@ -667,13 +674,13 @@ static void j1939xtp_rx_cts(struct sk_buff *skb, int extd)
 
 	session_lock(session);
 	pkt = extd ? j1939etp_ctl_to_packet(dat) : dat[2];
-	if (!dat[0])
+	if (!dat[0]) {
 		hrtimer_cancel(&session->txtimer);
-	else if (!pkt)
+	} else if (!pkt) {
 		goto bad_fmt;
-	else if (dat[1] > session->pkt.block /* 0xff for etp */)
+	} else if (dat[1] > session->pkt.block /* 0xff for etp */) {
 		goto bad_fmt;
-	else {
+	} else {
 		/* set packet counters only when not CTS(0) */
 		session->pkt.done = pkt - 1;
 		session->pkt.last = session->pkt.done + dat[1];
@@ -1438,4 +1445,3 @@ void j1939tp_module_exit(void)
 	sessionlist_unlock();
 	flush_scheduled_work();
 }
-

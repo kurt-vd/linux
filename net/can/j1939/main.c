@@ -174,8 +174,9 @@ int j1939_send(struct sk_buff *skb)
 	if (padding) {
 		memset(cf->data + dlc, 0xff, 8 - dlc);
 		cf->can_dlc = 8;
-	} else
+	} else {
 		cf->can_dlc = dlc;
+	}
 
 	return can_send(skb, 1);
  failed:

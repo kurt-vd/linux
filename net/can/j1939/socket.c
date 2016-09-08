@@ -77,8 +77,9 @@ static inline int j1939_sock_pending_add_first(struct sock *sk)
 	if (!jsk->skb_pending) {
 		++jsk->skb_pending;
 		saved = 1;
-	} else
+	} else {
 		saved = 0;
+	}
 	spin_unlock_bh(&jsk->lock);
 	return saved;
 }
@@ -265,9 +266,9 @@ static int j1939sk_bind(struct socket *sock, struct sockaddr *uaddr, int len)
 	/* bind to device ... */
 	bound_dev_if = jsk->sk.sk_bound_dev_if;
 	/* copy netdev info */
-	if (!bound_dev_if && addr->can_ifindex)
+	if (!bound_dev_if && addr->can_ifindex) {
 		bound_dev_if = addr->can_ifindex;
-	else if (bound_dev_if && addr->can_ifindex) {
+	} else if (bound_dev_if && addr->can_ifindex) {
 		/* do netdev */
 		if (bound_dev_if != addr->can_ifindex) {
 			ret = -EBUSY;
@@ -353,9 +354,9 @@ static int j1939sk_connect(struct socket *sock, struct sockaddr *uaddr,
 	bound_dev_if = jsk->sk.sk_bound_dev_if;
 
 	/* copy netdev info */
-	if (!bound_dev_if && addr->can_ifindex)
+	if (!bound_dev_if && addr->can_ifindex) {
 		bound_dev_if = addr->can_ifindex;
-	else if (bound_dev_if && addr->can_ifindex) {
+	} else if (bound_dev_if && addr->can_ifindex) {
 		/* do netdev */
 		if (bound_dev_if != addr->can_ifindex) {
 			ret = -EBUSY;

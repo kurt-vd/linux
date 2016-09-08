@@ -191,9 +191,9 @@ void j1939_recv_address_claim(struct sk_buff *skb, struct j1939_priv *priv)
 	struct j1939_ecu *ecu;
 
 	/* network mgmt */
-	if (skcb->pgn == PGN_ADDRESS_CLAIMED)
+	if (skcb->pgn == PGN_ADDRESS_CLAIMED) {
 		j1939_process_address_claim(skb);
-	else if (j1939_address_is_unicast(skcb->srcaddr)) {
+	} else if (j1939_address_is_unicast(skcb->srcaddr)) {
 		ecu = j1939_ecu_find_by_addr(skcb->srcaddr, skb->skb_iif);
 		if (ecu) {
 			/* source administration */
