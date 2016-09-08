@@ -36,10 +36,11 @@ struct proc_dir_entry *j1939_procdir;
 /* LOWLEVEL CAN interface */
 
 /* CAN_HDR: #bytes before can_frame data part */
-#define CAN_HDR	(offsetof(struct can_frame, data))
+#define CAN_HDR (offsetof(struct can_frame, data))
+
 /* CAN_FTR: #bytes beyond data part */
-#define CAN_FTR	(sizeof(struct can_frame)-CAN_HDR-\
-		sizeof(((struct can_frame *)0)->data))
+#define CAN_FTR (sizeof(struct can_frame) - CAN_HDR - \
+		 sizeof(((struct can_frame *)0)->data))
 
 static unsigned int padding;
 
@@ -108,11 +109,11 @@ static void j1939_can_recv(struct sk_buff *iskb, void *data)
 	/* update localflags */
 	read_lock_bh(&priv->lock);
 	if (j1939_address_is_unicast(skcb->srcaddr) &&
-			priv->ents[skcb->srcaddr].nusers)
+	    priv->ents[skcb->srcaddr].nusers)
 		skcb->srcflags |= ECU_LOCAL;
 	if (j1939_address_is_valid(skcb->dstaddr) ||
-			(j1939_address_is_unicast(skcb->dstaddr) &&
-				priv->ents[skcb->dstaddr].nusers))
+	    (j1939_address_is_unicast(skcb->dstaddr) &&
+	     priv->ents[skcb->dstaddr].nusers))
 		skcb->dstflags |= ECU_LOCAL;
 	read_unlock_bh(&priv->lock);
 
@@ -123,7 +124,7 @@ static void j1939_can_recv(struct sk_buff *iskb, void *data)
 		/* this means the transport layer processed the message */
 		goto done;
 	j1939_recv(skb);
-done:
+ done:
 	kfree_skb(skb);
 }
 
@@ -175,7 +176,7 @@ int j1939_send(struct sk_buff *skb)
 		cf->can_dlc = dlc;
 
 	return can_send(skb, 1);
-failed:
+ failed:
 	consume_skb(skb);
 	return ret;
 }
@@ -206,8 +207,8 @@ static void j1939_priv_ac_task(unsigned long val)
 /* NETDEV MANAGEMENT */
 
 /* values for can_rx_(un)register */
-#define J1939_CAN_ID	CAN_EFF_FLAG
-#define J1939_CAN_MASK	(CAN_EFF_FLAG | CAN_RTR_FLAG)
+#define J1939_CAN_ID CAN_EFF_FLAG
+#define J1939_CAN_MASK (CAN_EFF_FLAG | CAN_RTR_FLAG)
 
 static DEFINE_MUTEX(j1939_netdev_lock);
 
@@ -245,19 +246,19 @@ int j1939_netdev_start(struct net_device *netdev)
 
 	/* add CAN handler */
 	ret = can_rx_register(netdev, J1939_CAN_ID, J1939_CAN_MASK,
-			j1939_can_recv, priv, "j1939");
+			      j1939_can_recv, priv, "j1939");
 	if (ret < 0)
 		goto fail_can;
 
 	can_ml_priv->j1939_priv = priv;
 	dev_hold(netdev);
-done:
+ done:
 	mutex_unlock(&j1939_netdev_lock);
 	return 0;
 
-fail_can:
+ fail_can:
 	kfree(priv);
-fail_mem:
+ fail_mem:
 	mutex_unlock(&j1939_netdev_lock);
 	return ret;
 }
@@ -286,7 +287,7 @@ void j1939_netdev_stop(struct net_device *netdev)
 	mutex_unlock(&j1939_netdev_lock);
 
 	can_rx_unregister(netdev, J1939_CAN_ID, J1939_CAN_MASK,
-			j1939_can_recv, priv);
+			  j1939_can_recv, priv);
 
 	/* remove pending transport protocol sessions */
 	j1939tp_rmdev_notifier(netdev);
@@ -320,7 +321,7 @@ void put_j1939_priv(struct j1939_priv *segment)
 }
 
 static int j1939_netdev_notify(struct notifier_block *nb,
-			unsigned long msg, void *data)
+			       unsigned long msg, void *data)
 {
 	struct net_device *netdev = (struct net_device *)data;
 
@@ -366,7 +367,7 @@ static int j1939_proc_show_addr(struct seq_file *sqf, void *v)
 			if (!priv->ents[j].nusers)
 				continue;
 			seq_printf(sqf, "%s\t%02x\t%i\n",
-					netdev->name, j, priv->ents[j].nusers);
+				   netdev->name, j, priv->ents[j].nusers);
 		}
 		read_unlock_bh(&priv->lock);
 	}
@@ -389,9 +390,9 @@ static int j1939_proc_show_name(struct seq_file *sqf, void *v)
 		read_lock_bh(&priv->lock);
 		list_for_each_entry(ecu, &priv->ecus, list)
 			seq_printf(sqf, "%s\t%016llx\t%02x%s\t%i\n",
-					netdev->name, ecu->name, ecu->sa,
-				(priv->ents[ecu->sa].ecu == ecu) ? "" : "?",
-					ecu->nusers);
+				   netdev->name, ecu->name, ecu->sa,
+				   (priv->ents[ecu->sa].ecu == ecu) ? "" : "?",
+				   ecu->nusers);
 		read_unlock_bh(&priv->lock);
 	}
 	rcu_read_unlock();
@@ -454,13 +455,13 @@ static __init int j1939_module_init(void)
 	return 0;
 
 	remove_proc_entry("name", j1939_procdir);
-fail_name:
+ fail_name:
 	remove_proc_entry("addr", j1939_procdir);
-fail_addr:
+ fail_addr:
 	j1939tp_module_exit();
-fail_tp:
+ fail_tp:
 	can_proto_unregister(&j1939_can_proto);
-fail_sk:
+ fail_sk:
 	unregister_netdevice_notifier(&j1939_netdev_notifier);
 	proc_remove(j1939_procdir);
 	j1939_procdir = NULL;

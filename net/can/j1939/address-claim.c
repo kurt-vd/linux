@@ -82,7 +82,7 @@ int j1939_fixup_address_claim(struct sk_buff *skb)
 		if (ret < 0)
 			return ret;
 		ecu = j1939_ecu_find_by_name(skcb->srcname,
-				skb->dev->ifindex);
+					     skb->dev->ifindex);
 		if (!ecu)
 			return -ENODEV;
 
@@ -94,9 +94,9 @@ int j1939_fixup_address_claim(struct sk_buff *skb)
 		/* assign source address */
 		sa = j1939_name_to_sa(skcb->srcname, skb->dev->ifindex);
 		if (!j1939_address_is_unicast(sa) &&
-				!ac_msg_is_request_for_ac(skb)) {
-			j1939_notice("tx drop: invalid sa for name "
-					"0x%016llx\n", skcb->srcname);
+		    !ac_msg_is_request_for_ac(skb)) {
+			j1939_notice("tx drop: invalid sa for name 0x%016llx\n",
+				     skcb->srcname);
 			return -EADDRNOTAVAIL;
 		}
 		skcb->srcaddr = sa;
@@ -106,8 +106,8 @@ int j1939_fixup_address_claim(struct sk_buff *skb)
 	if (skcb->dstname) {
 		sa = j1939_name_to_sa(skcb->dstname, skb->dev->ifindex);
 		if (!j1939_address_is_unicast(sa)) {
-			j1939_notice("tx drop: invalid da for name "
-					"0x%016llx\n", skcb->dstname);
+			j1939_notice("tx drop: invalid da for name 0x%016llx\n",
+				     skcb->dstname);
 			return -EADDRNOTAVAIL;
 		}
 		skcb->dstaddr = sa;
@@ -146,7 +146,7 @@ static void j1939_process_address_claim(struct sk_buff *skb)
 	write_lock_bh(&priv->lock);
 
 	ecu = _j1939_ecu_get_register(priv, name,
-			j1939_address_is_unicast(skcb->srcaddr));
+				      j1939_address_is_unicast(skcb->srcaddr));
 	if (IS_ERR(ecu))
 		goto done;
 
@@ -175,10 +175,10 @@ static void j1939_process_address_claim(struct sk_buff *skb)
 
 	/* schedule timer in 250 msec to commit address change */
 	hrtimer_start(&ecu->ac_timer, ktime_set(0, 250000000),
-			HRTIMER_MODE_REL);
+		      HRTIMER_MODE_REL);
 	/* rxtime administration */
 	ecu->rxtime = ktime_get();
-done:
+ done:
 	write_unlock_bh(&priv->lock);
 	put_j1939_priv(priv);
 }

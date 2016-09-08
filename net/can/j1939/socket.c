@@ -34,10 +34,11 @@ struct j1939_sock {
 	struct list_head list;
 
 	int state;
-	#define JSK_BOUND	BIT(0)
-	#define JSK_CONNECTED	BIT(1)
-	#define PROMISC		BIT(2)
-	#define RECV_OWN	BIT(3)
+
+#define JSK_BOUND BIT(0)
+#define JSK_CONNECTED BIT(1)
+#define PROMISC BIT(2)
+#define RECV_OWN BIT(3)
 
 	int ifindex_started; /* ifindex of netdev */
 
@@ -112,7 +113,7 @@ static inline int j1939_no_address(const struct sock *sk)
 
 /* matches skb control buffer (addr) with a j1939 filter */
 static inline int packet_match(const struct j1939_sk_buff_cb *skcb,
-		const struct j1939_filter *f, int nfilter)
+			       const struct j1939_filter *f, int nfilter)
 {
 	if (!nfilter)
 		/* receive all when no filters are assigned */
@@ -143,14 +144,14 @@ static void j1939sk_recv_skb(struct sk_buff *oskb, struct j1939_sock *jsk)
 	if (!(jsk->state & (JSK_BOUND | JSK_CONNECTED)))
 		return;
 	if (jsk->sk.sk_bound_dev_if &&
-			(jsk->sk.sk_bound_dev_if != oskb->skb_iif))
+	    (jsk->sk.sk_bound_dev_if != oskb->skb_iif))
 		/* this socket does not take packets from this iface */
 		return;
 	if (!(jsk->state & PROMISC)) {
 		if (jsk->addr.src) {
 			/* reject message for other destinations */
 			if (skcb->dstname &&
-				(skcb->dstname != jsk->addr.src))
+			    (skcb->dstname != jsk->addr.src))
 				/* the msg is not destined for the name
 				 * that the socket is bound to
 				 */
@@ -158,7 +159,7 @@ static void j1939sk_recv_skb(struct sk_buff *oskb, struct j1939_sock *jsk)
 		} else {
 			/* reject messages for other destination addresses */
 			if (j1939_address_is_unicast(skcb->dstaddr) &&
-				(skcb->dstaddr != jsk->addr.sa))
+			    (skcb->dstaddr != jsk->addr.sa))
 				/* the msg is not destined for the name
 				 * that the socket is bound to
 				 */
@@ -317,7 +318,7 @@ static int j1939sk_bind(struct socket *sock, struct sockaddr *uaddr, int len)
 
 	ret = 0;
 
-fail_locked:
+ fail_locked:
 	if (!jsk->sk.sk_bound_dev_if && jsk->ifindex_started) {
 		/* started j1939 on this netdev during this call,
 		 * so we revert that
@@ -330,7 +331,7 @@ fail_locked:
 }
 
 static int j1939sk_connect(struct socket *sock, struct sockaddr *uaddr,
-		int len, int flags)
+			   int len, int flags)
 {
 	int ret;
 	struct sockaddr_can *addr = (struct sockaddr_can *)uaddr;
@@ -395,13 +396,13 @@ static int j1939sk_connect(struct socket *sock, struct sockaddr *uaddr,
 	jsk->state |= JSK_CONNECTED;
 	ret = 0;
 
-fail_locked:
+ fail_locked:
 	release_sock(sock->sk);
 	return ret;
 }
 
 static void j1939sk_sock2sockaddr_can(struct sockaddr_can *addr,
-		const struct j1939_sock *jsk, int peer)
+				      const struct j1939_sock *jsk, int peer)
 {
 	addr->can_family = AF_CAN;
 	addr->can_ifindex = jsk->sk.sk_bound_dev_if;
@@ -411,7 +412,7 @@ static void j1939sk_sock2sockaddr_can(struct sockaddr_can *addr,
 }
 
 static int j1939sk_getname(struct socket *sock, struct sockaddr *uaddr,
-		int *len, int peer)
+			   int *len, int peer)
 {
 	struct sockaddr_can *addr = (struct sockaddr_can *)uaddr;
 	struct sock *sk = sock->sk;
@@ -428,7 +429,7 @@ static int j1939sk_getname(struct socket *sock, struct sockaddr *uaddr,
 	j1939sk_sock2sockaddr_can(addr, jsk, peer);
 	*len = J1939_MIN_NAMELEN;
 
-failure:
+ failure:
 	release_sock(sk);
 
 	return ret;
@@ -467,8 +468,8 @@ static int j1939sk_release(struct socket *sock)
 	return 0;
 }
 
-static int j1939sk_setsockopt_flag(struct j1939_sock *jsk,
-		char __user *optval, unsigned int optlen, int flag)
+static int j1939sk_setsockopt_flag(struct j1939_sock *jsk, char __user *optval,
+				   unsigned int optlen, int flag)
 {
 	int tmp;
 
@@ -486,7 +487,7 @@ static int j1939sk_setsockopt_flag(struct j1939_sock *jsk,
 }
 
 static int j1939sk_setsockopt(struct socket *sock, int level, int optname,
-		char __user *optval, unsigned int optlen)
+			      char __user *optval, unsigned int optlen)
 {
 	struct sock *sk = sock->sk;
 	struct j1939_sock *jsk = j1939_sk(sk);
@@ -545,7 +546,7 @@ static int j1939sk_setsockopt(struct socket *sock, int level, int optname,
 }
 
 static int j1939sk_getsockopt(struct socket *sock, int level, int optname,
-		char __user *optval, int __user *optlen)
+			      char __user *optval, int __user *optlen)
 {
 	struct sock *sk = sock->sk;
 	struct j1939_sock *jsk = j1939_sk(sk);
@@ -590,13 +591,13 @@ static int j1939sk_getsockopt(struct socket *sock, int level, int optname,
 		ret = -EFAULT;
 	else
 		ret = 0;
-no_copy:
+ no_copy:
 	release_sock(&jsk->sk);
 	return ret;
 }
 
 static int j1939sk_recvmsg(struct socket *sock, struct msghdr *msg,
-		size_t size, int flags)
+			   size_t size, int flags)
 {
 	struct sock *sk = sock->sk;
 	struct sk_buff *skb;
@@ -621,14 +622,14 @@ static int j1939sk_recvmsg(struct socket *sock, struct msghdr *msg,
 	skcb = (void *)skb->cb;
 	if (j1939_address_is_valid(skcb->dstaddr))
 		put_cmsg(msg, SOL_CAN_J1939, SCM_J1939_DEST_ADDR,
-				sizeof(skcb->dstaddr), &skcb->dstaddr);
+			 sizeof(skcb->dstaddr), &skcb->dstaddr);
 
 	if (skcb->dstname)
 		put_cmsg(msg, SOL_CAN_J1939, SCM_J1939_DEST_NAME,
-				sizeof(skcb->dstname), &skcb->dstname);
+			 sizeof(skcb->dstname), &skcb->dstname);
 
 	put_cmsg(msg, SOL_CAN_J1939, SCM_J1939_PRIO,
-			sizeof(skcb->priority), &skcb->priority);
+		 sizeof(skcb->priority), &skcb->priority);
 
 	if (msg->msg_name) {
 		struct sockaddr_can *paddr = msg->msg_name;
@@ -686,8 +687,12 @@ static int j1939sk_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 	if (!dev)
 		return -ENXIO;
 
-	skb = sock_alloc_send_skb(sk, size + sizeof(struct can_frame) - sizeof(((struct can_frame*)NULL)->data) + sizeof(struct can_skb_priv),
-			msg->msg_flags & MSG_DONTWAIT, &ret);
+	skb = sock_alloc_send_skb(sk,
+				  size +
+				  sizeof(struct can_frame) -
+				  sizeof(((struct can_frame *)NULL)->data) +
+				  sizeof(struct can_skb_priv),
+				  msg->msg_flags & MSG_DONTWAIT, &ret);
 	if (!skb)
 		goto put_dev;
 
@@ -716,7 +721,7 @@ static int j1939sk_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 		struct sockaddr_can *addr = msg->msg_name;
 
 		if (addr->can_addr.j1939.name ||
-				(addr->can_addr.j1939.addr != J1939_NO_ADDR)) {
+		    (addr->can_addr.j1939.addr != J1939_NO_ADDR)) {
 			skcb->dstname = addr->can_addr.j1939.name;
 			skcb->dstaddr = addr->can_addr.j1939.addr;
 		}
@@ -735,7 +740,7 @@ static int j1939sk_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 				ret = -EAGAIN;
 		} else {
 			ret = wait_event_interruptible(jsk->waitq,
-					j1939_sock_pending_add_first(&jsk->sk));
+						       j1939_sock_pending_add_first(&jsk->sk));
 		}
 		if (ret < 0)
 			goto free_skb;
@@ -750,9 +755,9 @@ static int j1939sk_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 	dev_put(dev);
 	return (ret < 0) ? ret : size;
 
-free_skb:
+ free_skb:
 	kfree_skb(skb);
-put_dev:
+ put_dev:
 	dev_put(dev);
 	return ret;
 }

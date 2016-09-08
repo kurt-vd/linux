@@ -172,7 +172,10 @@ struct sockaddr_can {
 	int         can_ifindex;
 	union {
 		/* transport protocol class address information (e.g. ISOTP) */
-		struct { canid_t rx_id, tx_id; } tp;
+		struct {
+			canid_t rx_id;
+			canid_t tx_id;
+		} tp;
 
 		/* J1939 address information */
 		struct {

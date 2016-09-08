@@ -26,11 +26,11 @@
 
 /* TODO: return ENETRESET on busoff. */
 
-#define PGN_REQUEST		0x0ea00
-#define PGN_ADDRESS_CLAIMED	0x0ee00
-#define PGN_MAX			0x3ffff
+#define PGN_REQUEST 0x0ea00
+#define PGN_ADDRESS_CLAIMED 0x0ee00
+#define PGN_MAX 0x3ffff
 
-#define SA_MAX_UNICAST	0xfd
+#define SA_MAX_UNICAST 0xfd
 
 /* j1939 devices */
 struct j1939_ecu {
@@ -188,12 +188,12 @@ extern const char j1939_procname[];
 /* j1939 printk */
 #define j1939_printk(level, ...) printk(level "J1939 " __VA_ARGS__)
 
-#define j1939_err(...)		j1939_printk(KERN_ERR , __VA_ARGS__)
-#define j1939_warning(...)	j1939_printk(KERN_WARNING , __VA_ARGS__)
-#define j1939_notice(...)	j1939_printk(KERN_NOTICE , __VA_ARGS__)
-#define j1939_info(...)		j1939_printk(KERN_INFO , __VA_ARGS__)
+#define j1939_err(...)		j1939_printk(KERN_ERR, __VA_ARGS__)
+#define j1939_warning(...)	j1939_printk(KERN_WARNING, __VA_ARGS__)
+#define j1939_notice(...)	j1939_printk(KERN_NOTICE, __VA_ARGS__)
+#define j1939_info(...)		j1939_printk(KERN_INFO, __VA_ARGS__)
 #ifdef DEBUG
-#define j1939_debug(...)	j1939_printk(KERN_DEBUG , __VA_ARGS__)
+#define j1939_debug(...)	j1939_printk(KERN_DEBUG, __VA_ARGS__)
 #else
 #define j1939_debug(...)
 #endif
@@ -214,7 +214,7 @@ struct j1939_sk_buff_cb {
 	 */
 	int srcflags;
 	int dstflags;
-	#define ECU_LOCAL	1
+#define ECU_LOCAL 1
 	/* for tx, MSG_SYN will be used to sync on sockets */
 	int msg_flags;
 	/* j1939 clones incoming skb's.
@@ -224,8 +224,8 @@ struct j1939_sk_buff_cb {
 	struct sock *insock;
 };
 
-#define J1939_MSG_RESERVED	MSG_SYN
-#define J1939_MSG_SYNC		MSG_SYN
+#define J1939_MSG_RESERVED MSG_SYN
+#define J1939_MSG_SYNC MSG_SYN
 
 static inline int j1939cb_is_broadcast(const struct j1939_sk_buff_cb *skcb)
 {
@@ -247,8 +247,8 @@ void j1939_recv_address_claim(struct sk_buff *, struct j1939_priv *priv);
  * 'create' & 'register' & 'get' new ecu
  * when a matching ecu already exists, then that is returned
  */
-extern struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv,
-		name_t name, int create_if_necessary);
+struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv,
+					  name_t name, int create_if_necessary);
 /* unregister must be called with lock held */
 void _j1939_ecu_unregister(struct j1939_ecu *);
 

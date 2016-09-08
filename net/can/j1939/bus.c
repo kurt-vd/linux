@@ -41,17 +41,18 @@ static enum hrtimer_restart j1939_ecu_timer_handler(struct hrtimer *hrtimer)
 
 static void cb_put_j1939_ecu(struct kref *kref)
 {
-	struct j1939_ecu *ecu =container_of(kref, struct j1939_ecu, kref);
+	struct j1939_ecu *ecu = container_of(kref, struct j1939_ecu, kref);
 
 	kfree(ecu);
 }
+
 void put_j1939_ecu(struct j1939_ecu *ecu)
 {
 	kref_put(&ecu->kref, cb_put_j1939_ecu);
 }
 
 struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv, name_t name,
-		int create_if_necessary)
+					  int create_if_necessary)
 {
 	struct j1939_ecu *ecu, *dut;
 
@@ -143,7 +144,7 @@ int j1939_name_to_sa(u64 name, int ifindex)
 
 /* ecu lookup helper */
 static struct j1939_ecu *_j1939_ecu_find_by_name(name_t name,
-		struct j1939_priv *priv)
+						 struct j1939_priv *priv)
 {
 	struct j1939_ecu *ecu;
 
@@ -155,7 +156,7 @@ static struct j1939_ecu *_j1939_ecu_find_by_name(name_t name,
 		}
 	}
 	ecu = NULL;
-found_on_intf:
+ found_on_intf:
 	read_unlock_bh(&priv->lock);
 	return ecu;
 }
