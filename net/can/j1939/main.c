@@ -157,7 +157,7 @@ int j1939_send(struct sk_buff *skb)
 
 	/* re-claim the CAN_HDR from the SKB */
 	cf = (void *)skb_push(skb, CAN_HDR);
-	BUG_ON(!cf);
+
 	/* make it a full can frame again */
 	skb_put(skb, CAN_FTR + (8 - dlc));
 
@@ -222,7 +222,6 @@ int j1939_netdev_start(struct net_device *netdev)
 	struct j1939_priv *priv;
 	struct dev_rcv_lists *can_ml_priv;
 
-	BUG_ON(!netdev);
 	if (netdev->type != ARPHRD_CAN)
 		return -EAFNOSUPPORT;
 
@@ -272,7 +271,6 @@ void j1939_netdev_stop(struct net_device *netdev)
 	struct dev_rcv_lists *can_ml_priv;
 	struct j1939_priv *priv;
 
-	BUG_ON(!netdev);
 	if (netdev->type != ARPHRD_CAN)
 		return;
 	can_ml_priv = netdev->ml_priv;

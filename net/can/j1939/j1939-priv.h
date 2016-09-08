@@ -269,8 +269,6 @@ static inline struct j1939_priv *dev_j1939_priv(struct net_device *dev)
 	struct dev_rcv_lists *can_ml_priv;
 	struct j1939_priv *priv;
 
-	BUG_ON(!dev);
-
 	if (dev->type != ARPHRD_CAN)
 		return NULL;
 

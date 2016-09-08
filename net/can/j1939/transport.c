@@ -167,12 +167,9 @@ static inline void get_session(struct session *session)
 
 static void put_session(struct session *session)
 {
-	BUG_ON(!session);
 	if (atomic_add_return(-1, &session->refs) >= 0)
 		/* not the last one */
 		return;
-	/* it should have been removed from any list long time ago */
-	BUG_ON(!list_empty(&session->list));
 
 	hrtimer_try_to_cancel(&session->rxtimer);
 	hrtimer_try_to_cancel(&session->txtimer);

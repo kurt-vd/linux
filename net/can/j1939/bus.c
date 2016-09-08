@@ -87,7 +87,6 @@ struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv, name_t name,
 
 void _j1939_ecu_unregister(struct j1939_ecu *ecu)
 {
-	BUG_ON(!ecu);
 	ecu_dbg(ecu, "unregister\n");
 	hrtimer_try_to_cancel(&ecu->ac_timer);
 
