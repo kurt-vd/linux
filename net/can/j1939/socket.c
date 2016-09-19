@@ -57,8 +57,8 @@ struct j1939_sock {
 	 * when transport protocol comes in.
 	 * To allow emitting in order, keep a 'pending' nr. of packets
 	 */
-	int skb_pending;
-	spinlock_t lock;
+	int skb_pending;	/* TODO: convert to atomic_t */
+	spinlock_t lock;	/* protects skb_pending */
 	wait_queue_head_t waitq;
 };
 
