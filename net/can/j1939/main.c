@@ -59,9 +59,6 @@ static void j1939_can_recv(struct sk_buff *iskb, void *data)
 
 	BUILD_BUG_ON(sizeof(*skcb) > sizeof(skb->cb));
 
-	if (!priv)
-		return;
-
 	/* create a copy of the skb
 	 * j1939 only delivers the real data bytes,
 	 * the header goes into sockaddr.
