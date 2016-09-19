@@ -712,7 +712,7 @@ static void j1939xtp_rx_rts(struct sk_buff *skb, int extd)
 			skb->skb_iif, cb->srcaddr, cb->dstaddr);
 		return;
 	}
-	if (session && (0 != session->last_cmd)) {
+	if (session && (session->last_cmd != 0)) {
 		/* we received a second rts on the same connection */
 		pr_alert("%s: connection exists (%i %02x %02x)\n", __func__,
 				skb->skb_iif, cb->srcaddr, cb->dstaddr);
