@@ -30,7 +30,7 @@ MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("EIA Electronics (Kurt Van Dijck & Pieter Beyens)");
 MODULE_ALIAS("can-proto-" __stringify(CAN_J1939));
 
-const char j1939_procname[] = "can-j1939";
+static const char j1939_procname[] = "can-j1939";
 struct proc_dir_entry *j1939_procdir;
 
 /* LOWLEVEL CAN interface */

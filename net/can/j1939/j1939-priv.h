@@ -189,7 +189,6 @@ struct j1939_ecu *j1939_ecu_find_priv_default_tx(int ifindex, name_t *pname,
 						 u8 *paddr);
 
 extern struct proc_dir_entry *j1939_procdir;
-extern const char j1939_procname[];
 
 /* j1939 printk */
 #define j1939_printk(level, ...) printk(level "J1939 " __VA_ARGS__)
