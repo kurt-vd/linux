@@ -429,9 +429,9 @@ static int j1939xtp_do_tx_ctl(struct sk_buff *related, int extd,
 
 	skdat = skb_put(skb, 8);
 	memcpy(skdat, dat, 5);
-	skdat[7] = (pgn >> 16) & 0xff;
-	skdat[6] = (pgn >>  8) & 0xff;
-	skdat[5] = (pgn >>  0) & 0xff;
+	skdat[5] = (pgn >> 0);
+	skdat[6] = (pgn >> 8);
+	skdat[7] = (pgn >> 16);
 
 	return j1939_send(skb);
 }
@@ -949,15 +949,15 @@ static int j1939tp_txnext(struct session *session)
 	case 0:
 		if (!j1939tp_im_transmitter(session->skb))
 			break;
-		dat[1] = (session->skb->len >> 0) & 0xff;
-		dat[2] = (session->skb->len >> 8) & 0xff;
+		dat[1] = (session->skb->len >> 0);
+		dat[2] = (session->skb->len >> 8);
 		dat[3] = session->pkt.total;
 		if (session->extd) {
 			dat[0] = etp_cmd_rts;
-			dat[1] = (session->skb->len >> 0) & 0xff;
-			dat[2] = (session->skb->len >> 8) & 0xff;
-			dat[3] = (session->skb->len >> 16) & 0xff;
-			dat[4] = (session->skb->len >> 24) & 0xff;
+			dat[1] = (session->skb->len >> 0);
+			dat[2] = (session->skb->len >> 8);
+			dat[3] = (session->skb->len >> 16);
+			dat[4] = (session->skb->len >> 24);
 		} else if (j1939cb_is_broadcast(session->cb)) {
 			dat[0] = tp_cmd_bam;
 			/* fake cts for broadcast */
@@ -991,9 +991,9 @@ static int j1939tp_txnext(struct session *session)
 			pkt = session->pkt.done + 1;
 			dat[0] = etp_cmd_cts;
 			dat[1] = len;
-			dat[2] = (pkt >>  0) & 0xff;
-			dat[3] = (pkt >>  8) & 0xff;
-			dat[4] = (pkt >> 16) & 0xff;
+			dat[2] = (pkt >> 0);
+			dat[3] = (pkt >> 8);
+			dat[4] = (pkt >> 16);
 		} else {
 			dat[0] = tp_cmd_cts;
 			dat[1] = len;
@@ -1018,9 +1018,9 @@ static int j1939tp_txnext(struct session *session)
 			session->pkt.dpo = session->pkt.done;
 			pkt = session->pkt.dpo;
 			dat[1] = session->pkt.last - session->pkt.done;
-			dat[2] = (pkt >>  0) & 0xff;
-			dat[3] = (pkt >>  8) & 0xff;
-			dat[4] = (pkt >> 16) & 0xff;
+			dat[2] = (pkt >> 0);
+			dat[3] = (pkt >> 8);
+			dat[4] = (pkt >> 16);
 			ret = j1939tp_tx_ctl(session, 0, dat);
 			if (ret < 0)
 				goto failed;
