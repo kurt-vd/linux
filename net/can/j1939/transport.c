@@ -979,7 +979,7 @@ static int j1939tp_txnext(struct session *session)
 		j1939tp_set_rxtimeout(session, 1250);
 		break;
 	case tp_cmd_rts:
-	case etp_cmd_rts:
+	case etp_cmd_rts: /* fallthrough */
 		if (!j1939tp_im_receiver(session->skb))
 			break;
  tx_cts:
@@ -1028,9 +1028,10 @@ static int j1939tp_txnext(struct session *session)
 			j1939tp_set_rxtimeout(session, 1250);
 			session->pkt.tx = session->pkt.done;
 		}
-	case tp_cmd_cts:
-	case 0xff: /* did some data */
-	case etp_cmd_dpo:
+		/* fallthrough */
+	case tp_cmd_cts: /* fallthrough */
+	case 0xff: /* did some data */			/* FIXME: let David Jander recheck this */
+	case etp_cmd_dpo: /* fallthrough */
 		if ((session->extd || !j1939cb_is_broadcast(session->cb)) &&
 		    j1939tp_im_receiver(session->skb)) {
 			if (session->pkt.done >= session->pkt.total) {
@@ -1061,6 +1062,7 @@ static int j1939tp_txnext(struct session *session)
 				goto tx_cts;
 			}
 		}
+		break;
 	case tp_cmd_bam:
 		if (!j1939tp_im_transmitter(session->skb))
 			break;
