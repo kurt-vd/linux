@@ -396,7 +396,7 @@ static int j1939tp_tx_dat(struct sk_buff *related, int extd,
 }
 
 static int j1939xtp_do_tx_ctl(struct sk_buff *related, int extd,
-			      int swap_src_dst, pgn_t pgn, const u8 dat[5])
+			      int swap_src_dst, pgn_t pgn, const u8 *dat)
 {
 	struct sk_buff *skb;
 	struct j1939_sk_buff_cb *skb_cb;
@@ -437,7 +437,7 @@ static int j1939xtp_do_tx_ctl(struct sk_buff *related, int extd,
 }
 
 static inline int j1939tp_tx_ctl(struct session *session,
-				 int swap_src_dst, const u8 dat[8])
+				 int swap_src_dst, const u8 *dat)
 {
 	return j1939xtp_do_tx_ctl(session->skb, session->extd, swap_src_dst,
 				  session->cb->pgn, dat);
