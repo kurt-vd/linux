@@ -83,11 +83,11 @@ static void j1939_can_recv(struct sk_buff *iskb, void *data)
 	/* save incoming socket, without assigning the skb to it */
 	skcb->insock = iskb->sk;
 	skcb->priority = (cf->can_id & 0x1c000000) >> 26;
-	skcb->srcaddr = cf->can_id & 0xff;
+	skcb->srcaddr = cf->can_id;
 	skcb->pgn = (cf->can_id & 0x3ffff00) >> 8;
 	if (pgn_is_pdu1(skcb->pgn)) {
 		/* Type 1: with destination address */
-		skcb->dstaddr = skcb->pgn & 0xff;
+		skcb->dstaddr = skcb->pgn;
 		/* normalize pgn: strip dst address */
 		skcb->pgn &= 0x3ff00;
 	} else {
@@ -159,11 +159,11 @@ int j1939_send(struct sk_buff *skb)
 	skb_put(skb, CAN_FTR + (8 - dlc));
 
 	canid = CAN_EFF_FLAG |
-		(skcb->srcaddr & 0xff) |
+		(skcb->srcaddr) |
 		((skcb->priority & 0x7) << 26);
 	if (pgn_is_pdu1(skcb->pgn))
 		canid |= ((skcb->pgn & 0x3ff00) << 8) |
-			((skcb->dstaddr & 0xff) << 8);
+			(skcb->dstaddr << 8);
 	else
 		canid |= ((skcb->pgn & 0x3ffff) << 8);
 
