@@ -23,7 +23,7 @@
 #include <linux/can/j1939.h>
 #include "j1939-priv.h"
 
-#define J1939_MIN_NAMELEN required_size(can_addr.j1939, struct sockaddr_can)
+#define J1939_MIN_NAMELEN REQUIRED_SIZE(struct sockaddr_can, can_addr.j1939)
 
 /* list of sockets */
 static struct list_head j1939_socks = LIST_HEAD_INIT(j1939_socks);
