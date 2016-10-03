@@ -1,12 +1,11 @@
+cppflags-$(CONFIG_CAN_J1939_DEBUG) += -DDEBUG
 
-obj-$(CONFIG_CAN_J1939)	+= can-j1939.o
+obj-y += can-j1939.o
 
-can-j1939-objs := main.o \
+can-j1939-objs := \
+	address-claim.o \
 	bus.o \
-	address-claim.o transport.o \
-	socket.o
-
-ifeq ($(CONFIG_CAN_J1939_DEBUG),y)
-	EXTRA_CFLAGS += -DDEBUG
-endif
+	main.o \
+	socket.o \
+	transport.o
 
