@@ -53,17 +53,17 @@ static unsigned int retry_ms = 20;
 static unsigned int packet_delay;
 static unsigned int padding = 1;
 
-module_param_named(transport_burst_count, block, uint, 0644);
-module_param_named(transport_max_size, max_packet_size, uint, 0644);
-module_param_named(transport_retry_time, retry_ms, uint, 0644);
-module_param_named(transport_packet_delay, packet_delay, uint, 0644);
-module_param_named(transport_padding, padding, uint, 0644);
-
-MODULE_PARM_DESC(transport_burst_count, "Number of packets to send in burst between flow control (1..255, default 255)");
-MODULE_PARM_DESC(transport_max_size, "Maximum packet size (default 100k)");
-MODULE_PARM_DESC(transport_retry_time, "Packet retransmission timeout in msecs, used in case of buffer full. (default 20)");
-MODULE_PARM_DESC(transport_packet_delay, "Delay between packets to avoid buffer overruns (default 0)");
-MODULE_PARM_DESC(transport_padding, "Pad all data packets to 8 bytes, and stuff with 0xff");
+/* the limit values for sysctl */
+static int block_min = 1;
+static int block_max = 255;
+static int max_size_min = 8;
+static int max_size_max = MAX_ETP_PACKET_SIZE;
+static int retry_min = 1;
+static int retry_max = 1250;
+static int packet_delay_min = 0;
+static int packet_delay_max = 1250;
+static int padding_min = 0;
+static int padding_max = 1;
 
 struct session {
 	struct list_head list;
@@ -1421,11 +1421,69 @@ static const struct file_operations j1939tp_proc_ops = {
 	.release = single_release,
 };
 
+static struct ctl_table canj1939_sysctl_table[] = {
+	{
+		.procname	= "transport_burst_count",
+		.data		= &block,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &block_min,
+		.extra2		= &block_max,
+	},
+	{
+		.procname	= "transport_max_size",
+		.data		= &max_packet_size,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &max_size_min,
+		.extra2		= &max_size_max,
+	},
+	{
+		.procname	= "transport_retry_time",
+		.data		= &retry_ms,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &retry_min,
+		.extra2		= &retry_max,
+	},
+	{
+		.procname	= "transport_packet_delay",
+		.data		= &packet_delay,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &packet_delay_min,
+		.extra2		= &packet_delay_max,
+	},
+	{
+		.procname	= "transport_padding",
+		.data		= &padding,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= proc_dointvec_minmax,
+		.extra1		= &padding_min,
+		.extra2		= &padding_max,
+	},
+	{},
+};
+
+static struct ctl_table_header *sysctl_hdr;
+
 /* module init */
 int __init j1939tp_module_init(void)
 {
 	if (!proc_create("transport", 0444, j1939_procdir, &j1939tp_proc_ops))
 		return -ENOMEM;
+
+	sysctl_hdr = register_net_sysctl(&init_net, "net/can-j1939",
+			canj1939_sysctl_table);
+	if (!sysctl_hdr) {
+		remove_proc_entry("transport", j1939_procdir);
+		return -ENOMEM;
+	}
 	return 0;
 }
 
@@ -1435,6 +1493,7 @@ void j1939tp_module_exit(void)
 
 	wake_up_all(&tp_wait);
 
+	unregister_net_sysctl_table(sysctl_hdr);
 	remove_proc_entry("transport", j1939_procdir);
 	sessionlist_lock();
 	list_for_each_entry_safe(session, saved, &tp_extsessionq, list) {
