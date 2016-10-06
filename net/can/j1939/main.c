@@ -42,12 +42,6 @@ struct proc_dir_entry *j1939_procdir;
 #define CAN_FTR (sizeof(struct can_frame) - CAN_HDR - \
 		 sizeof(((struct can_frame *)0)->data))
 
-static unsigned int padding;
-
-module_param_named(padding, padding, uint, 0644);
-
-MODULE_PARM_DESC(padding, "Pad all packets to 8 bytes, and stuff with 0xff");
-
 /* lowest layer */
 static void j1939_can_recv(struct sk_buff *iskb, void *data)
 {
@@ -168,12 +162,7 @@ int j1939_send(struct sk_buff *skb)
 		canid |= ((skcb->pgn & 0x3ffff) << 8);
 
 	cf->can_id = canid;
-	if (padding) {
-		memset(cf->data + dlc, 0xff, 8 - dlc);
-		cf->can_dlc = 8;
-	} else {
-		cf->can_dlc = dlc;
-	}
+	cf->can_dlc = dlc;
 
 	return can_send(skb, 1);
  failed:

@@ -51,16 +51,19 @@ static unsigned int block = 255;
 static unsigned int max_packet_size = 1024 * 100;
 static unsigned int retry_ms = 20;
 static unsigned int packet_delay;
+static unsigned int padding;
 
 module_param_named(transport_burst_count, block, uint, 0644);
 module_param_named(transport_max_size, max_packet_size, uint, 0644);
 module_param_named(transport_retry_time, retry_ms, uint, 0644);
 module_param_named(transport_packet_delay, packet_delay, uint, 0644);
+module_param_named(transport_padding, padding, uint, 0644);
 
 MODULE_PARM_DESC(transport_burst_count, "Number of packets to send in burst between flow control (1..255, default 255)");
 MODULE_PARM_DESC(transport_max_size, "Maximum packet size (default 100k)");
 MODULE_PARM_DESC(transport_retry_time, "Packet retransmission timeout in msecs, used in case of buffer full. (default 20)");
 MODULE_PARM_DESC(transport_packet_delay, "Delay between packets to avoid buffer overruns (default 0)");
+MODULE_PARM_DESC(transport_padding, "Pad all data packets to 8 bytes, and stuff with 0xff");
 
 struct session {
 	struct list_head list;
@@ -392,6 +395,8 @@ static int j1939tp_tx_dat(struct sk_buff *related, int extd,
 
 	skdat = skb_put(skb, len);
 	memcpy(skdat, dat, len);
+	if (padding && len < 8)
+		memset(skb_put(skb, 8 - len), 0xff, 8 - len);
 	return j1939_send(skb);
 }
 
