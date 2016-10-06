@@ -1067,8 +1067,7 @@ static int j1939tp_txnext(struct session *session)
 				goto tx_cts;
 			}
 		}
-		break;
-	case tp_cmd_bam:
+	case tp_cmd_bam: /* fallthrough */
 		if (!j1939tp_im_transmitter(session->skb))
 			break;
 		tpdat = session->skb->data;
