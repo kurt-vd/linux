@@ -48,10 +48,10 @@
 #define MAX_ETP_PACKET_SIZE (7 * 0x00ffffff)
 
 static unsigned int block = 255;
-static unsigned int max_packet_size = 1024 * 100;
+static unsigned int max_packet_size = MAX_ETP_PACKET_SIZE;
 static unsigned int retry_ms = 20;
 static unsigned int packet_delay;
-static unsigned int padding;
+static unsigned int padding = 1;
 
 module_param_named(transport_burst_count, block, uint, 0644);
 module_param_named(transport_max_size, max_packet_size, uint, 0644);
