@@ -27,6 +27,7 @@ Table : Subdirectories in /proc/sys/net
  ipx       IPX                 token-ring IBM token ring
  bridge    Bridging            decnet     DEC net
  ipv6      IP version 6        tipc       TIPC
+ can-j1939 SAE J1939
 ..............................................................................
 
 1. /proc/sys/net/core - Network core options
@@ -315,3 +316,48 @@ originally may have been issued in the correct sequential order.
 If named_timeout is nonzero, failed topology updates will be placed on a defer
 queue until another event arrives that clears the error, or until the timeout
 expires. Value is in milliseconds.
+
+7. SAE J1939
+-------------------------------------------------------
+
+transport_burst_count
+---------------------
+
+This tunable controls how many fragments to receive in a burst for the transport
+protocol. The value must be between 1 and 255. Transport protocol is more
+efficient with higher values, therefore, the default is 255.
+
+transport_max_size
+------------------
+
+The kernel needs to allocate a buffer for each packet received with transport
+protocol, before it can decide that the packet is not needed locally.
+This tunable controls the maximum size for packets to allocate.
+Packets that are announced with a bigger size are not received, i.e. aborted
+for private transport protocol sessions, and ignored for broadcasted sessions.
+
+transport_retry_time
+--------------------
+
+After the first fragment of a transport protocol sessions has been sent, the
+subsequent fragments will be delivered to best effert, including a retry when
+recoverable failures pass.
+This parameter controls the time before a retry is attempted. The time is
+expressed in milliseconds.
+
+transport_packet_delay
+----------------------
+
+This parameter controls the time in milliseconds between outgoing fragments
+of a single transport protocol session. This is normally 0, which indicates
+as fast as possible. Slower ECU's on the bus may require a delay in order
+to keep up receiving fragments.
+
+transport_padding
+-----------------
+
+SAE J1939 requires transport protocol data fragments to fill all 8 bytes of
+the CAN frame, and to pad the unused bytes with 0xff.
+This parameters (default 1) allow to turn off (0) padding. The CAN frame's DLC
+is then adjusted. This increases effiency (a tiny bit), makes the packets on
+the wire easier to read, but break strict compliancy to the standard.
