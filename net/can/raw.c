@@ -393,7 +393,7 @@ static int raw_bind(struct socket *sock, struct sockaddr *uaddr, int len)
 	int err = 0;
 	int notify_enetdown = 0;
 
-	if (len < sizeof(*addr))
+	if (len < required_size(can_ifindex, *addr))
 		return -EINVAL;
 
 	lock_sock(sk);
@@ -720,7 +720,7 @@ static int raw_sendmsg(struct socket *sock, struct msghdr *msg, size_t size)
 	if (msg->msg_name) {
 		DECLARE_SOCKADDR(struct sockaddr_can *, addr, msg->msg_name);
 
-		if (msg->msg_namelen < sizeof(*addr))
+		if (msg->msg_namelen < required_size(can_ifindex, *addr))
 			return -EINVAL;
 
 		if (addr->can_family != AF_CAN)

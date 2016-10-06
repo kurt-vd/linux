@@ -2818,6 +2818,14 @@ F:	include/linux/can/platform/
 F:	include/uapi/linux/can/error.h
 F:	include/uapi/linux/can/netlink.h
 
+CAN-J1939 NETWORK LAYER
+M:	Kurt Van Dijck <kurt.van.dijck@eia.be>
+L:	socketcan-core@lists.berlios.de
+L:	netdev@vger.kernel.org
+S:	Maintained
+F:	net/can/j1939/
+F:	include/linux/can/j1939.h
+
 CAPABILITIES
 M:	Serge Hallyn <serge.hallyn@canonical.com>
 L:	linux-security-module@vger.kernel.org

@@ -13,3 +13,5 @@ can-bcm-y		:= bcm.o
 
 obj-$(CONFIG_CAN_GW)	+= can-gw.o
 can-gw-y		:= gw.o
+
+obj-$(CONFIG_CAN_J1939)	+= j1939/

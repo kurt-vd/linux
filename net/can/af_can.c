@@ -77,7 +77,8 @@ MODULE_PARM_DESC(stats_timer, "enable timer for statistics (default:on)");
 
 /* receive filters subscribed for 'all' CAN devices */
 struct dev_rcv_lists can_rx_alldev_list;
-static DEFINE_SPINLOCK(can_rcvlists_lock);
+DEFINE_SPINLOCK(can_rcvlists_lock);
+EXPORT_SYMBOL(can_rcvlists_lock);
 
 static struct kmem_cache *rcv_cache __read_mostly;
 

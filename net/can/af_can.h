@@ -72,6 +72,9 @@ struct dev_rcv_lists {
 	struct hlist_head rx_eff[CAN_EFF_RCV_ARRAY_SZ];
 	int remove_on_zero_entries;
 	int entries;
+#ifdef CAN_J1939
+	void *j1939_priv;
+#endif
 };
 
 /* statistic structures */
@@ -111,6 +114,8 @@ struct s_pstats {
 
 /* receive filters subscribed for 'all' CAN devices */
 extern struct dev_rcv_lists can_rx_alldev_list;
+/* lock for dev_rcv_lists modifications */
+extern spinlock_t can_rcvlists_lock;
 
 /* function prototypes for the CAN networklayer procfs (proc.c) */
 void can_init_proc(void);
