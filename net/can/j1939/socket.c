@@ -57,8 +57,7 @@ struct j1939_sock {
 	 * when transport protocol comes in.
 	 * To allow emitting in order, keep a 'pending' nr. of packets
 	 */
-	int skb_pending;	/* TODO: convert to atomic_t */
-	spinlock_t lock;	/* protects skb_pending */
+	atomic_t skb_pending;
 	wait_queue_head_t waitq;
 };
 
@@ -67,42 +66,39 @@ static inline struct j1939_sock *j1939_sk(const struct sock *sk)
 	return container_of(sk, struct j1939_sock, sk);
 }
 
-/* skb_pending issues */
+/*
+ * j1939_sock_pending_add_first
+ * Succeeds when the first pending SKB is scheduled
+ * Fails when SKB are already pending
+ */
 static inline int j1939_sock_pending_add_first(struct sock *sk)
 {
-	int saved;
 	struct j1939_sock *jsk = j1939_sk(sk);
 
-	spin_lock_bh(&jsk->lock);
-	if (!jsk->skb_pending) {
-		++jsk->skb_pending;
-		saved = 1;
-	} else {
-		saved = 0;
-	}
-	spin_unlock_bh(&jsk->lock);
-	return saved;
+	/*
+	 * atomic_cmpxchg returns the old value
+	 * When it was 0, it is exchanged with 1 and this function
+	 * succeeded. (return 1)
+	 * When it was != 0, it is not exchanged, and this fuction
+	 * fails (returns 0).
+	 */
+	return !atomic_cmpxchg(&jsk->skb_pending, 0, 1);
 }
 
 static inline void j1939_sock_pending_add(struct sock *sk)
 {
 	struct j1939_sock *jsk = j1939_sk(sk);
 
-	spin_lock_bh(&jsk->lock);
-	++jsk->skb_pending;
-	spin_unlock_bh(&jsk->lock);
+	atomic_inc(&jsk->skb_pending);
 }
 
 void j1939_sock_pending_del(struct sock *sk)
 {
 	struct j1939_sock *jsk = j1939_sk(sk);
-	int saved;
 
-	spin_lock_bh(&jsk->lock);
-	--jsk->skb_pending;
-	saved = jsk->skb_pending;
-	spin_unlock_bh(&jsk->lock);
-	if (!saved)
+	/* atomic_dec_return returns the new value */
+	if (!atomic_dec_return(&jsk->skb_pending))
+		/* no pending SKB's */
 		wake_up(&jsk->waitq);
 }
 
@@ -209,13 +205,13 @@ static int j1939sk_init(struct sock *sk)
 	struct j1939_sock *jsk = j1939_sk(sk);
 
 	INIT_LIST_HEAD(&jsk->list);
-	spin_lock_init(&jsk->lock);
 	init_waitqueue_head(&jsk->waitq);
 	jsk->sk.sk_priority = j1939_to_sk_priority(6);
 	jsk->sk.sk_reuse = 1; /* per default */
 	jsk->addr.sa = J1939_NO_ADDR;
 	jsk->addr.da = J1939_NO_ADDR;
 	jsk->addr.pgn = J1939_NO_PGN;
+	atomic_set(&jsk->skb_pending, 0);
 	return 0;
 }
 
