@@ -72,6 +72,9 @@ struct dev_rcv_lists {
 	struct hlist_head rx_eff[CAN_EFF_RCV_ARRAY_SZ];
 	int remove_on_zero_entries;
 	int entries;
+#ifdef CAN_J1939
+	void *j1939_priv;
+#endif
 };
 
 /* statistic structures */

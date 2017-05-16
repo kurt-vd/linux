@@ -16,6 +16,7 @@
 #include <linux/can.h>
 #include <linux/skbuff.h>
 #include <linux/netdevice.h>
+#include <net/rtnetlink.h>
 
 #define CAN_VERSION "20120528"
 
@@ -39,6 +40,14 @@ struct can_proto {
 	const struct proto_ops *ops;
 	struct proto *prot;
 };
+
+/* required_size
+ * macro to find the minimum size of a struct
+ * that includes a requested member
+ */
+#define REQUIRED_SIZE(struct_type, member) \
+	(offsetof(typeof(struct_type), member) + \
+	 sizeof(((typeof(struct_type) *)(NULL))->member))
 
 /* function prototypes for the CAN networklayer core (af_can.c) */
 
