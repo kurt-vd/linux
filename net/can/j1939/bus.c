@@ -62,6 +62,10 @@ struct j1939_ecu *_j1939_ecu_get_register(struct j1939_priv *priv, name_t name,
 		if (dut->name == name)
 			return dut;
 	}
+
+	if (!create_if_necessary) {
+		return ERR_PTR(-ENODEV);
+	}
 	/* alloc */
 	ecu = kzalloc(sizeof(*ecu), gfp_any());
 	if (!ecu)
