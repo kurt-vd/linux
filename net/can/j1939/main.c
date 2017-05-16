@@ -235,7 +235,7 @@ int j1939_netdev_start(struct net_device *netdev)
 
 	/* add CAN handler */
 	ret = can_rx_register(netdev, J1939_CAN_ID, J1939_CAN_MASK,
-			      j1939_can_recv, priv, "j1939");
+			      j1939_can_recv, priv, "j1939", NULL);
 	if (ret < 0)
 		goto fail_can;
 
