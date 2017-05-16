@@ -586,13 +586,13 @@ static void j1939xtp_rx_bad_message(struct sk_buff *skb, int extd)
 	j1939_skbcb_swap(cb);
 }
 
-static void _j1939xtp_rx_abort(struct sk_buff *skb, int extd)
+static void _j1939xtp_rx_abort(struct sk_buff *skb, int extd, int reverse)
 {
 	struct session *session;
 	pgn_t pgn;
 
 	pgn = j1939xtp_ctl_to_pgn(skb->data);
-	session = j1939tp_find(sessionq(extd), skb, 0);
+	session = j1939tp_find(sessionq(extd), skb, reverse);
 	if (!session)
 		return;
 	if (session->transmission && !session->last_txcmd) {
@@ -618,12 +618,8 @@ static inline void j1939xtp_rx_abort(struct sk_buff *skb, int extd)
 	pr_info("%s %i, %05x\n", __func__, skb->skb_iif,
 		j1939xtp_ctl_to_pgn(skb->data));
 
-	_j1939xtp_rx_abort(skb, extd);
-	j1939_skbcb_swap(cb);
-	_j1939xtp_rx_abort(skb, extd);
-
-	/* restore skb */
-	j1939_skbcb_swap(cb);
+	_j1939xtp_rx_abort(skb, extd, 0);
+	_j1939xtp_rx_abort(skb, extd, 1);
 }
 
 static void j1939xtp_rx_eof(struct sk_buff *skb, int extd)
