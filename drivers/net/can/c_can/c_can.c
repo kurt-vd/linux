@@ -210,7 +210,7 @@ static const struct can_bittiming_const c_can_bittiming_const = {
 
 static const int c_can_obj_counts[] = {
 	[BOSCH_C_CAN] = 32,
-	[BOSCH_D_CAN] = 32, /* the IP supports 128, we support only 32 */
+	[BOSCH_D_CAN] = 64, /* the IP supports 128, we support only 64 */
 };
 
 static inline void c_can_pm_runtime_enable(const struct c_can_priv *priv)
@@ -355,16 +355,6 @@ static void c_can_setup_tx_object(struct net_device *dev, int iface,
 					(frame->data[i + 1] << 8));
 		}
 	}
-}
-
-static inline void c_can_activate_all_lower_rx_msg_obj(struct net_device *dev,
-						       int iface)
-{
-	struct c_can_priv *priv = netdev_priv(dev);
-	int i;
-
-	for (i = priv->obj.recv_frst; i <= priv->obj.recv_last; i++)
-		c_can_object_get(dev, iface, i, IF_COMM_CLR_NEWDAT);
 }
 
 static int c_can_handle_lost_msg_obj(struct net_device *dev,
@@ -714,7 +704,12 @@ static void c_can_do_tx(struct net_device *dev)
 	struct sk_buff *skb;
 	u8 len;
 
-	clr = pend = priv->read_reg(priv, C_CAN_INTPND2_REG);
+	if (priv->type == BOSCH_D_CAN) {
+		pend = priv->read_reg32(priv, C_CAN_INTPND3_REG);
+	} else {
+		pend = priv->read_reg(priv, C_CAN_INTPND2_REG);
+	}
+	clr = pend;
 
 	while ((idx = ffs(pend))) {
 		idx--;
@@ -824,7 +819,13 @@ static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
 
 static inline u32 c_can_get_pending(struct c_can_priv *priv)
 {
-	u32 pend = priv->read_reg(priv, C_CAN_NEWDAT1_REG);
+	u32 pend;
+
+	if (priv->type == BOSCH_D_CAN) {
+		pend = priv->read_reg32(priv, C_CAN_NEWDAT1_REG);
+	} else {
+		pend = priv->read_reg(priv, C_CAN_NEWDAT1_REG);
+	}
 
 	return pend;
 }
@@ -835,8 +836,7 @@ static inline u32 c_can_get_pending(struct c_can_priv *priv)
  * c_can core saves a received CAN message into the first free message
  * object it finds free (starting with the lowest). Bits NEWDAT and
  * INTPND are set for this message object indicating that a new message
- * has arrived. To work-around this issue, we keep two groups of message
- * objects whose partitioning is defined by C_CAN_MSG_OBJ_RX_SPLIT.
+ * has arrived.
  *
  * We clear the newdat bit right away.
  *
@@ -846,13 +846,6 @@ static int c_can_do_rx_poll(struct net_device *dev)
 {
 	struct c_can_priv *priv = netdev_priv(dev);
 	u32 pkts = 0, pend = 0, toread, n;
-
-	/*
-	 * It is faster to read only one 16bit register. This is only possible
-	 * for a maximum number of 16 objects.
-	 */
-	WARN_ONCE(priv->obj.recv_last > 16,
-			"Implementation does not support more message objects than 16");
 
 	for (;;) {
 		if (!pend) {
