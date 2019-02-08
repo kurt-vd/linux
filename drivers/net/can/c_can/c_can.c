@@ -213,6 +213,21 @@ static const int c_can_obj_counts[] = {
 	[BOSCH_D_CAN] = 64, /* the IP supports 128, we support only 64 */
 };
 
+static inline int c_can_ffs64(u64 x)
+{
+	int b;
+
+	b = ffs(x);
+
+	if (!b) {
+		b = ffs(x >> 32);
+		if (b)
+			b += 32;
+	}
+
+	return b;
+}
+
 static inline void c_can_pm_runtime_enable(const struct c_can_priv *priv)
 {
 	if (priv->device)
@@ -700,22 +715,23 @@ static void c_can_do_tx(struct net_device *dev)
 {
 	struct c_can_priv *priv = netdev_priv(dev);
 	struct net_device_stats *stats = &dev->stats;
-	u32 idx, obj, pkts = 0, bytes = 0, pend, clr;
+	u32 idx, obj, pkts = 0, bytes = 0;
+	u64 pend, clr;
 	struct sk_buff *skb;
 	u8 len;
 
+	/* Mask interrupt pending bits */
+	pend = priv->read_reg32(priv, C_CAN_INTPND1_REG);
 	if (priv->type == BOSCH_D_CAN) {
-		pend = priv->read_reg32(priv, C_CAN_INTPND3_REG);
-	} else {
-		pend = priv->read_reg(priv, C_CAN_INTPND2_REG);
+		pend |= (u64)priv->read_reg32(priv, C_CAN_INTPND3_REG) << 32;
 	}
-	clr = pend;
+	pend &= ~priv->obj.recv_mask;
+	clr = pend >> priv->obj.recv_count;
 
-	while ((idx = ffs(pend))) {
-		idx--;
-		pend &= ~(1 << idx);
-		obj = idx + priv->obj.send_frst;
+	while ((obj = c_can_ffs64(pend))) {
+		pend &= ~((u64)1 << (obj - 1));
 		c_can_inval_tx_object(dev, IF_RX, obj);
+		idx = obj - priv->obj.send_frst;
 		skb = __can_get_echo_skb(dev, idx, &len);
 		can_rx_offload_irq_receive_skb(&priv->offload, skb);
 		bytes += len;
@@ -740,9 +756,9 @@ static void c_can_do_tx(struct net_device *dev)
  * raced with the hardware or failed to readout all upper
  * objects in the last run due to quota limit.
  */
-static u32 c_can_adjust_pending(struct c_can_priv *priv, u32 pend)
+static u64 c_can_adjust_pending(struct c_can_priv *priv, u64 pend)
 {
-	u32 weight, lasts;
+	u64 weight, lasts;
 
 	if (pend == priv->obj.recv_mask)
 		return pend;
@@ -751,8 +767,8 @@ static u32 c_can_adjust_pending(struct c_can_priv *priv, u32 pend)
 	 * If the last set bit is larger than the number of pending
 	 * bits we have a gap.
 	 */
-	weight = hweight32(pend);
-	lasts = fls(pend);
+	weight = hweight64(pend);
+	lasts = fls64(pend);
 
 	/* If the bits are linear, nothing to do */
 	if (lasts == weight)
@@ -781,11 +797,11 @@ static inline void c_can_rx_finalize(struct net_device *dev,
 }
 
 static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
-			      u32 pend)
+			      u64 pend)
 {
 	u32 pkts = 0, ctrl, obj;
 
-	while ((obj = ffs(pend))) {
+	while ((obj = c_can_ffs64(pend))) {
 		pend &= ~BIT(obj - 1);
 
 		c_can_rx_object_get(dev, priv, obj);
@@ -817,12 +833,14 @@ static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
 	return pkts;
 }
 
-static inline u32 c_can_get_pending(struct c_can_priv *priv)
+static inline u64 c_can_get_pending(struct c_can_priv *priv)
 {
-	u32 pend;
+	u64 pend;
 
 	if (priv->type == BOSCH_D_CAN) {
 		pend = priv->read_reg32(priv, C_CAN_NEWDAT1_REG);
+		pend |= (u64)priv->read_reg32(priv, C_CAN_NEWDAT3_REG) << 32;
+		pend &= priv->obj.recv_mask;
 	} else {
 		pend = priv->read_reg(priv, C_CAN_NEWDAT1_REG);
 	}
@@ -845,7 +863,8 @@ static inline u32 c_can_get_pending(struct c_can_priv *priv)
 static int c_can_do_rx_poll(struct net_device *dev)
 {
 	struct c_can_priv *priv = netdev_priv(dev);
-	u32 pkts = 0, pend = 0, toread, n;
+	u32 pkts = 0, n;
+	u64 pend = 0, toread;
 
 	for (;;) {
 		if (!pend) {
@@ -1163,7 +1182,7 @@ struct net_device *alloc_c_can_dev(int type, int object_count)
 
 	if (!object_count || object_count > c_can_obj_counts[type])
 		object_count = c_can_obj_counts[type];
-	send_object_count = object_count/2;
+	send_object_count = 8;
 
 	dev = alloc_candev(sizeof(struct c_can_priv), send_object_count);
 	if (!dev)
