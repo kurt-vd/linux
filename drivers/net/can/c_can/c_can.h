@@ -59,6 +59,8 @@ enum reg {
 	C_CAN_TXRQST2_REG,
 	C_CAN_NEWDAT1_REG,
 	C_CAN_NEWDAT2_REG,
+	C_CAN_NEWDAT3_REG,
+	C_CAN_NEWDAT4_REG,
 	C_CAN_INTPND1_REG,
 	C_CAN_INTPND2_REG,
 	C_CAN_INTPND3_REG,
@@ -122,6 +124,8 @@ static const u16 reg_map_d_can[] = {
 	[C_CAN_TXRQST2_REG]	= 0x8A,
 	[C_CAN_NEWDAT1_REG]	= 0x9C,
 	[C_CAN_NEWDAT2_REG]	= 0x9E,
+	[C_CAN_NEWDAT3_REG]	= 0xA0,
+	[C_CAN_NEWDAT4_REG]	= 0xA2,
 	[C_CAN_INTPND1_REG]	= 0xB0,
 	[C_CAN_INTPND2_REG]	= 0xB2,
 	[C_CAN_INTPND3_REG]	= 0xB4,
@@ -205,7 +209,7 @@ struct c_can_priv {
 	struct c_can_obj_def {
 		int count;
 		int recv_count;
-		u32 recv_mask;
+		u64 recv_mask;
 		int recv_frst;
 		int recv_last;
 		int send_count;
