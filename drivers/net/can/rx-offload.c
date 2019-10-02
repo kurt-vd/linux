@@ -271,6 +271,23 @@ int can_rx_offload_queue_tail(struct can_rx_offload *offload,
 }
 EXPORT_SYMBOL_GPL(can_rx_offload_queue_tail);
 
+int can_rx_offload_receive_skb(struct can_rx_offload *offload,
+			       struct sk_buff *skb)
+{
+	struct net_device_stats *stats = &offload->dev->stats;
+	int err;
+
+	err = can_rx_offload_queue_tail(offload, skb);
+	if (err) {
+		kfree_skb(skb);
+		stats->rx_errors++;
+		stats->rx_fifo_errors++;
+	}
+
+	return err;
+}
+EXPORT_SYMBOL_GPL(can_rx_offload_receive_skb);
+
 static int can_rx_offload_init_queue(struct net_device *dev, struct can_rx_offload *offload, unsigned int weight)
 {
 	offload->dev = dev;
