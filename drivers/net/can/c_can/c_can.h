@@ -22,6 +22,8 @@
 #ifndef C_CAN_H
 #define C_CAN_H
 
+#include <linux/can/rx-offload.h>
+
 /* message object split */
 #define C_CAN_NO_OF_OBJECTS	32
 #define C_CAN_MSG_OBJ_RX_NUM	16
@@ -194,11 +196,10 @@ struct c_can_raminit {
 /* c_can private data structure */
 struct c_can_priv {
 	struct can_priv can;	/* must be the first member */
-	struct napi_struct napi;
+	struct can_rx_offload offload;
 	struct net_device *dev;
 	struct device *device;
 	atomic_t tx_active;
-	atomic_t sie_pending;
 	unsigned long tx_dir;
 	int last_status;
 	u16 (*read_reg) (const struct c_can_priv *priv, enum reg index);

@@ -173,9 +173,6 @@
 /* Wait for ~1 sec for INIT bit */
 #define INIT_WAIT_MS		1000
 
-/* napi related */
-#define C_CAN_NAPI_WEIGHT	C_CAN_MSG_OBJ_RX_NUM
-
 /* c_can lec values */
 enum c_can_lec_type {
 	LEC_NO_ERROR = 0,
@@ -388,7 +385,7 @@ static int c_can_handle_lost_msg_obj(struct net_device *dev,
 	frame->can_id |= CAN_ERR_CRTL;
 	frame->data[1] = CAN_ERR_CRTL_RX_OVERFLOW;
 
-	netif_receive_skb(skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 	return 1;
 }
 
@@ -440,7 +437,7 @@ static int c_can_read_msg_object(struct net_device *dev, int iface, u32 ctrl)
 	stats->rx_packets++;
 	stats->rx_bytes += frame->can_dlc;
 
-	netif_receive_skb(skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 	return 0;
 }
 
@@ -987,7 +984,7 @@ static int c_can_handle_state_change(struct net_device *dev,
 
 	stats->rx_packets++;
 	stats->rx_bytes += cf->can_dlc;
-	netif_receive_skb(skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 
 	return 1;
 }
@@ -1057,19 +1054,26 @@ static int c_can_handle_bus_err(struct net_device *dev,
 
 	stats->rx_packets++;
 	stats->rx_bytes += cf->can_dlc;
-	netif_receive_skb(skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 	return 1;
 }
 
-static int c_can_poll(struct napi_struct *napi, int quota)
+static irqreturn_t c_can_isr(int irq, void *dev_id)
 {
-	struct net_device *dev = napi->dev;
+	struct net_device *dev = dev_id;
 	struct c_can_priv *priv = netdev_priv(dev);
 	u16 curr, last = priv->last_status;
 	int work_done = 0;
+	int reg_int;
+
+	reg_int = priv->read_reg(priv, C_CAN_INT_REG);
+	if (!reg_int)
+		return IRQ_NONE;
+
+	can_rx_offload_irq_start(&priv->offload);
 
 	/* Only read the status register if a status interrupt was pending */
-	if (atomic_xchg(&priv->sie_pending, 0)) {
+	if (reg_int & INT_STS_PENDING) {
 		priv->last_status = curr = priv->read_reg(priv, C_CAN_STS_REG);
 		/* Ack status on C_CAN. D_CAN is self clearing */
 		if (priv->type != BOSCH_D_CAN)
@@ -1116,37 +1120,15 @@ static int c_can_poll(struct napi_struct *napi, int quota)
 	work_done += c_can_handle_bus_err(dev, curr & LEC_MASK);
 
 	/* Handle Tx/Rx events. We do this unconditionally */
-	work_done += c_can_do_rx_poll(dev, (quota - work_done));
+	work_done += c_can_do_rx_poll(dev, C_CAN_MSG_OBJ_RX_NUM);
 	c_can_do_tx(dev);
 
 end:
-	if (work_done < quota) {
-		napi_complete_done(napi, work_done);
-		/* enable all IRQs if we are not in bus off state */
-		if (priv->can.state != CAN_STATE_BUS_OFF)
-			c_can_irq_control(priv, true);
-	}
+	can_rx_offload_irq_end(&priv->offload);
 
-	return work_done;
-}
-
-static irqreturn_t c_can_isr(int irq, void *dev_id)
-{
-	struct net_device *dev = (struct net_device *)dev_id;
-	struct c_can_priv *priv = netdev_priv(dev);
-	int reg_int;
-
-	reg_int = priv->read_reg(priv, C_CAN_INT_REG);
-	if (!reg_int)
-		return IRQ_NONE;
-
-	/* save for later use */
-	if (reg_int & INT_STS_PENDING)
-		atomic_set(&priv->sie_pending, 1);
-
-	/* disable all interrupts and schedule the NAPI */
-	c_can_irq_control(priv, false);
-	napi_schedule(&priv->napi);
+	/* disable all IRQs if we are in bus off state */
+	if (priv->can.state == CAN_STATE_BUS_OFF)
+		c_can_irq_control(priv, false);
 
 	return IRQ_HANDLED;
 }
@@ -1181,7 +1163,7 @@ static int c_can_open(struct net_device *dev)
 
 	can_led_event(dev, CAN_LED_EVENT_OPEN);
 
-	napi_enable(&priv->napi);
+	can_rx_offload_enable(&priv->offload);
 	/* enable status change, error and module interrupts */
 	c_can_irq_control(priv, true);
 	netif_start_queue(dev);
@@ -1203,7 +1185,7 @@ static int c_can_close(struct net_device *dev)
 	struct c_can_priv *priv = netdev_priv(dev);
 
 	netif_stop_queue(dev);
-	napi_disable(&priv->napi);
+	can_rx_offload_disable(&priv->offload);
 	c_can_stop(dev);
 	free_irq(dev->irq, dev);
 	close_candev(dev);
@@ -1226,7 +1208,6 @@ struct net_device *alloc_c_can_dev(void)
 		return NULL;
 
 	priv = netdev_priv(dev);
-	netif_napi_add(dev, &priv->napi, c_can_poll, C_CAN_NAPI_WEIGHT);
 
 	priv->dev = dev;
 	priv->can.bittiming_const = &c_can_bittiming_const;
@@ -1318,9 +1299,6 @@ EXPORT_SYMBOL_GPL(c_can_power_up);
 
 void free_c_can_dev(struct net_device *dev)
 {
-	struct c_can_priv *priv = netdev_priv(dev);
-
-	netif_napi_del(&priv->napi);
 	free_candev(dev);
 }
 EXPORT_SYMBOL_GPL(free_c_can_dev);
@@ -1349,14 +1327,21 @@ int register_c_can_dev(struct net_device *dev)
 	dev->flags |= IFF_ECHO;	/* we support local echo */
 	dev->netdev_ops = &c_can_netdev_ops;
 
-	err = register_candev(dev);
+	err = can_rx_offload_add_manual(dev, &priv->offload,
+					C_CAN_MSG_OBJ_RX_NUM);
 	if (err)
 		goto register_exit_runtime_disable;
+
+	err = register_candev(dev);
+	if (err)
+		goto register_exit_offload_del;
 
 	devm_can_led_init(dev);
 
 	return 0;
 
+ register_exit_offload_del:
+	can_rx_offload_del(&priv->offload);
  register_exit_runtime_disable:
 	c_can_pm_runtime_disable(priv);
 
@@ -1369,6 +1354,8 @@ void unregister_c_can_dev(struct net_device *dev)
 	struct c_can_priv *priv = netdev_priv(dev);
 
 	unregister_candev(dev);
+
+	can_rx_offload_del(&priv->offload);
 
 	c_can_pm_runtime_disable(priv);
 }
