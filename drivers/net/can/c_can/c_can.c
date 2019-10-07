@@ -1351,9 +1351,14 @@ int register_c_can_dev(struct net_device *dev)
 
 	err = register_candev(dev);
 	if (err)
-		c_can_pm_runtime_disable(priv);
-	else
-		devm_can_led_init(dev);
+		goto register_exit_runtime_disable;
+
+	devm_can_led_init(dev);
+
+	return 0;
+
+ register_exit_runtime_disable:
+	c_can_pm_runtime_disable(priv);
 
 	return err;
 }
