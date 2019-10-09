@@ -288,7 +288,54 @@ int can_rx_offload_receive_skb(struct can_rx_offload *offload,
 }
 EXPORT_SYMBOL_GPL(can_rx_offload_receive_skb);
 
-static int can_rx_offload_init_queue(struct net_device *dev, struct can_rx_offload *offload, unsigned int weight)
+void can_rx_offload_irq_start(struct can_rx_offload *offload)
+{
+	__skb_queue_head_init(&offload->irq_skb_queue);
+}
+EXPORT_SYMBOL_GPL(can_rx_offload_irq_start);
+
+int can_rx_offload_irq_receive_skb(struct can_rx_offload *offload,
+			       struct sk_buff *skb)
+{
+	struct net_device_stats *stats = &offload->dev->stats;
+
+	if (skb_queue_len(&offload->skb_queue) +
+			skb_queue_len(&offload->irq_skb_queue)
+			>= offload->skb_queue_len_max) {
+		kfree_skb(skb);
+		stats->rx_errors++;
+		stats->rx_fifo_errors++;
+		return -ENOMEM;
+	}
+	__skb_queue_tail(&offload->irq_skb_queue, skb);
+	return 0;
+}
+EXPORT_SYMBOL_GPL(can_rx_offload_receive_skb);
+
+
+void can_rx_offload_irq_end(struct can_rx_offload *offload)
+{
+	int queue_len;
+	unsigned long flags;
+
+	if (skb_queue_empty(&offload->irq_skb_queue))
+		return;
+	spin_lock_irqsave(&offload->skb_queue.lock, flags);
+	skb_queue_splice_tail(&offload->irq_skb_queue, &offload->skb_queue);
+	spin_unlock_irqrestore(&offload->skb_queue.lock, flags);
+
+	queue_len = skb_queue_len(&offload->skb_queue);
+	if (queue_len > offload->skb_queue_len_max / 8)
+		netdev_dbg(offload->dev, "%s: queue_len=%d\n",
+			   __func__, queue_len);
+
+	can_rx_offload_schedule(offload);
+}
+EXPORT_SYMBOL_GPL(can_rx_offload_irq_end);
+
+static int can_rx_offload_init_queue(struct net_device *dev,
+				     struct can_rx_offload *offload,
+				     unsigned int weight)
 {
 	offload->dev = dev;
 

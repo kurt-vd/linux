@@ -27,6 +27,7 @@ struct can_rx_offload {
 				     u32 *timestamp, unsigned int mb);
 
 	struct sk_buff_head skb_queue;
+	struct sk_buff_head irq_skb_queue;
 	u32 skb_queue_len_max;
 
 	unsigned int mb_first;
@@ -51,6 +52,10 @@ unsigned int can_rx_offload_get_echo_skb(struct can_rx_offload *offload,
 int can_rx_offload_queue_tail(struct can_rx_offload *offload,
 			      struct sk_buff *skb);
 int can_rx_offload_receive_skb(struct can_rx_offload *offload,
+			       struct sk_buff *skb);
+void can_rx_offload_irq_start(struct can_rx_offload *offload);
+void can_rx_offload_irq_end(struct can_rx_offload *offload);
+int can_rx_offload_irq_receive_skb(struct can_rx_offload *offload,
 			       struct sk_buff *skb);
 void can_rx_offload_del(struct can_rx_offload *offload);
 void can_rx_offload_enable(struct can_rx_offload *offload);
