@@ -481,7 +481,6 @@ static netdev_tx_t c_can_start_xmit(struct sk_buff *skb,
 	 * transmit as we might race against do_tx().
 	 */
 	c_can_setup_tx_object(dev, IF_TX, frame, idx);
-	priv->dlc[idx] = frame->can_dlc;
 	can_put_echo_skb(skb, dev, idx);
 
 	/* Update the active bits */
@@ -731,6 +730,8 @@ static void c_can_do_tx(struct net_device *dev)
 	struct c_can_priv *priv = netdev_priv(dev);
 	struct net_device_stats *stats = &dev->stats;
 	u32 idx, obj, pkts = 0, bytes = 0, pend, clr;
+	struct sk_buff *skb;
+	u8 len;
 
 	clr = pend = priv->read_reg(priv, C_CAN_INTPND2_REG);
 
@@ -739,8 +740,9 @@ static void c_can_do_tx(struct net_device *dev)
 		pend &= ~(1 << idx);
 		obj = idx + C_CAN_MSG_OBJ_TX_FIRST;
 		c_can_inval_tx_object(dev, IF_RX, obj);
-		can_get_echo_skb(dev, idx);
-		bytes += priv->dlc[idx];
+		skb = __can_get_echo_skb(dev, idx, &len);
+		can_rx_offload_irq_receive_skb(&priv->offload, skb);
+		bytes += len;
 		pkts++;
 	}
 
