@@ -384,7 +384,7 @@ static int c_can_handle_lost_msg_obj(struct net_device *dev,
 	frame->can_id |= CAN_ERR_CRTL;
 	frame->data[1] = CAN_ERR_CRTL_RX_OVERFLOW;
 
-	can_rx_offload_receive_skb(&priv->offload, skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 	return 1;
 }
 
@@ -436,7 +436,7 @@ static int c_can_read_msg_object(struct net_device *dev, int iface, u32 ctrl)
 	stats->rx_packets++;
 	stats->rx_bytes += frame->can_dlc;
 
-	can_rx_offload_receive_skb(&priv->offload, skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 	return 0;
 }
 
@@ -948,7 +948,7 @@ static int c_can_handle_state_change(struct net_device *dev,
 
 	stats->rx_packets++;
 	stats->rx_bytes += cf->can_dlc;
-	can_rx_offload_receive_skb(&priv->offload, skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 
 	return 1;
 }
@@ -1018,7 +1018,7 @@ static int c_can_handle_bus_err(struct net_device *dev,
 
 	stats->rx_packets++;
 	stats->rx_bytes += cf->can_dlc;
-	can_rx_offload_receive_skb(&priv->offload, skb);
+	can_rx_offload_irq_receive_skb(&priv->offload, skb);
 	return 1;
 }
 
@@ -1033,6 +1033,8 @@ static irqreturn_t c_can_isr(int irq, void *dev_id)
 	reg_int = priv->read_reg(priv, C_CAN_INT_REG);
 	if (!reg_int)
 		return IRQ_NONE;
+
+	can_rx_offload_irq_start(&priv->offload);
 
 	/* Only read the status register if a status interrupt was pending */
 	if (reg_int & INT_STS_PENDING) {
@@ -1080,6 +1082,8 @@ static irqreturn_t c_can_isr(int irq, void *dev_id)
 	c_can_do_tx(dev);
 
 end:
+	can_rx_offload_irq_end(&priv->offload);
+
 	/* disable all IRQs if we are in bus off state */
 	if (priv->can.state == CAN_STATE_BUS_OFF)
 		c_can_irq_control(priv, false);
