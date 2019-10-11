@@ -173,6 +173,10 @@
 /* Wait for ~1 sec for INIT bit */
 #define INIT_WAIT_MS		1000
 
+/* Weight for rx-offload (napi) */
+#define C_CAN_OFFLOAD_WEIGHT	(C_CAN_MSG_OBJ_RX_NUM *2 \
+		+ C_CAN_MSG_OBJ_TX_NUM +16)
+
 /* c_can lec values */
 enum c_can_lec_type {
 	LEC_NO_ERROR = 0,
@@ -1330,7 +1334,7 @@ int register_c_can_dev(struct net_device *dev)
 	dev->netdev_ops = &c_can_netdev_ops;
 
 	err = can_rx_offload_add_manual(dev, &priv->offload,
-					C_CAN_MSG_OBJ_RX_NUM);
+					C_CAN_OFFLOAD_WEIGHT);
 	if (err)
 		goto register_exit_runtime_disable;
 
