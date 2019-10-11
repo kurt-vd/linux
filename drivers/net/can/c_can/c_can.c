@@ -809,11 +809,11 @@ static inline void c_can_rx_finalize(struct net_device *dev,
 }
 
 static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
-			      u32 pend, int quota)
+			      u32 pend)
 {
 	u32 pkts = 0, ctrl, obj;
 
-	while ((obj = ffs(pend)) && quota > 0) {
+	while ((obj = ffs(pend))) {
 		pend &= ~BIT(obj - 1);
 
 		c_can_rx_object_get(dev, priv, obj);
@@ -823,7 +823,6 @@ static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
 			int n = c_can_handle_lost_msg_obj(dev, IF_RX, obj, ctrl);
 
 			pkts += n;
-			quota -= n;
 			continue;
 		}
 
@@ -841,7 +840,6 @@ static int c_can_read_objects(struct net_device *dev, struct c_can_priv *priv,
 		c_can_rx_finalize(dev, priv, obj);
 
 		pkts++;
-		quota--;
 	}
 
 	return pkts;
@@ -867,7 +865,7 @@ static inline u32 c_can_get_pending(struct c_can_priv *priv)
  *
  * This can result in packet reordering when the readout is slow.
  */
-static int c_can_do_rx_poll(struct net_device *dev, int quota)
+static int c_can_do_rx_poll(struct net_device *dev)
 {
 	struct c_can_priv *priv = netdev_priv(dev);
 	u32 pkts = 0, pend = 0, toread, n;
@@ -879,7 +877,7 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
 	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
 			"Implementation does not support more message objects than 16");
 
-	while (quota > 0) {
+	for (;;) {
 		if (!pend) {
 			pend = c_can_get_pending(priv);
 			if (!pend)
@@ -895,9 +893,8 @@ static int c_can_do_rx_poll(struct net_device *dev, int quota)
 		/* Remove the bits from pend */
 		pend &= ~toread;
 		/* Read the objects */
-		n = c_can_read_objects(dev, priv, toread, quota);
+		n = c_can_read_objects(dev, priv, toread);
 		pkts += n;
-		quota -= n;
 	}
 
 	if (pkts)
@@ -1126,7 +1123,7 @@ static irqreturn_t c_can_isr(int irq, void *dev_id)
 	work_done += c_can_handle_bus_err(dev, curr & LEC_MASK);
 
 	/* Handle Tx/Rx events. We do this unconditionally */
-	work_done += c_can_do_rx_poll(dev, C_CAN_MSG_OBJ_RX_NUM);
+	work_done += c_can_do_rx_poll(dev);
 	c_can_do_tx(dev);
 
 end:
