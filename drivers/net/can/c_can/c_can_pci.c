@@ -31,6 +31,8 @@ enum c_can_pci_reg_align {
 struct c_can_pci_data {
 	/* Specify if is C_CAN or D_CAN */
 	enum c_can_dev_id type;
+	/* number of usable message objects */
+	int object_count;
 	/* Set the register alignment in the memory */
 	enum c_can_pci_reg_align reg_align;
 	/* Set the frequency */
@@ -149,7 +151,8 @@ static int c_can_pci_probe(struct pci_dev *pdev,
 	}
 
 	/* allocate the c_can device */
-	dev = alloc_c_can_dev();
+	dev = alloc_c_can_dev(c_can_pci_data->type,
+			c_can_pci_data->object_count);
 	if (!dev) {
 		ret = -ENOMEM;
 		goto out_iounmap;
@@ -183,8 +186,6 @@ static int c_can_pci_probe(struct pci_dev *pdev,
 		ret = -EINVAL;
 		goto out_free_c_can;
 	}
-
-	priv->type = c_can_pci_data->type;
 
 	/* Configure access to registers */
 	switch (c_can_pci_data->reg_align) {

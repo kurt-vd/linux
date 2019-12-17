@@ -173,10 +173,6 @@
 /* Wait for ~1 sec for INIT bit */
 #define INIT_WAIT_MS		1000
 
-/* Weight for rx-offload (napi) */
-#define C_CAN_OFFLOAD_WEIGHT	(C_CAN_MSG_OBJ_RX_NUM *2 \
-		+ C_CAN_MSG_OBJ_TX_NUM +16)
-
 /* c_can lec values */
 enum c_can_lec_type {
 	LEC_NO_ERROR = 0,
@@ -211,6 +207,11 @@ static const struct can_bittiming_const c_can_bittiming_const = {
 	.brp_min = 1,
 	.brp_max = 1024,	/* 6-bit BRP field + 4-bit BRPE field*/
 	.brp_inc = 1,
+};
+
+static const int c_can_obj_counts[] = {
+	[BOSCH_C_CAN] = 32,
+	[BOSCH_D_CAN] = 32, /* the IP supports 128, we support only 32 */
 };
 
 static inline void c_can_pm_runtime_enable(const struct c_can_priv *priv)
@@ -327,7 +328,7 @@ static void c_can_setup_tx_object(struct net_device *dev, int iface,
 	 * first, i.e. clear the MSGVAL flag in the arbiter.
 	 */
 	if (rtr != (bool)test_bit(idx, &priv->tx_dir)) {
-		u32 obj = idx + C_CAN_MSG_OBJ_TX_FIRST;
+		u32 obj = idx + priv->obj.send_frst;
 
 		c_can_inval_msg_object(dev, iface, obj);
 		change_bit(idx, &priv->tx_dir);
@@ -360,9 +361,10 @@ static void c_can_setup_tx_object(struct net_device *dev, int iface,
 static inline void c_can_activate_all_lower_rx_msg_obj(struct net_device *dev,
 						       int iface)
 {
+	struct c_can_priv *priv = netdev_priv(dev);
 	int i;
 
-	for (i = C_CAN_MSG_OBJ_RX_FIRST; i <= C_CAN_MSG_RX_LOW_LAST; i++)
+	for (i = priv->obj.recv_frst; i <= priv->obj.recv_last; i++)
 		c_can_object_get(dev, iface, i, IF_COMM_CLR_NEWDAT);
 }
 
@@ -474,10 +476,10 @@ static netdev_tx_t c_can_start_xmit(struct sk_buff *skb,
 	 * prioritized. The lowest buffer number wins.
 	 */
 	idx = fls(atomic_read(&priv->tx_active));
-	obj = idx + C_CAN_MSG_OBJ_TX_FIRST;
+	obj = idx + priv->obj.send_frst;
 
 	/* If this is the last buffer, stop the xmit queue */
-	if (idx == C_CAN_MSG_OBJ_TX_NUM - 1)
+	if (idx == priv->obj.send_count - 1)
 		netif_stop_queue(dev);
 	/*
 	 * Store the message in the interface so we can call
@@ -559,17 +561,18 @@ static int c_can_set_bittiming(struct net_device *dev)
  */
 static void c_can_configure_msg_objects(struct net_device *dev)
 {
+	struct c_can_priv *priv = netdev_priv(dev);
 	int i;
 
 	/* first invalidate all message objects */
-	for (i = C_CAN_MSG_OBJ_RX_FIRST; i <= C_CAN_NO_OF_OBJECTS; i++)
+	for (i = priv->obj.recv_frst; i <= priv->obj.count; i++)
 		c_can_inval_msg_object(dev, IF_RX, i);
 
 	/* setup receive message objects */
-	for (i = C_CAN_MSG_OBJ_RX_FIRST; i < C_CAN_MSG_OBJ_RX_LAST; i++)
+	for (i = priv->obj.recv_frst; i < priv->obj.recv_last; i++)
 		c_can_setup_receive_object(dev, IF_RX, i, 0, 0, IF_MCONT_RCV);
 
-	c_can_setup_receive_object(dev, IF_RX, C_CAN_MSG_OBJ_RX_LAST, 0, 0,
+	c_can_setup_receive_object(dev, IF_RX, priv->obj.recv_last, 0, 0,
 				   IF_MCONT_RCV_EOB);
 }
 
@@ -742,7 +745,7 @@ static void c_can_do_tx(struct net_device *dev)
 	while ((idx = ffs(pend))) {
 		idx--;
 		pend &= ~(1 << idx);
-		obj = idx + C_CAN_MSG_OBJ_TX_FIRST;
+		obj = idx + priv->obj.send_frst;
 		c_can_inval_tx_object(dev, IF_RX, obj);
 		skb = __can_get_echo_skb(dev, idx, &len);
 		can_rx_offload_irq_receive_skb(&priv->offload, skb);
@@ -753,7 +756,7 @@ static void c_can_do_tx(struct net_device *dev)
 	/* Clear the bits in the tx_active mask */
 	atomic_sub(clr, &priv->tx_active);
 
-	if (clr & (1 << (C_CAN_MSG_OBJ_TX_NUM - 1)))
+	if (clr & (1 << (priv->obj.send_count - 1)))
 		netif_wake_queue(dev);
 
 	if (pkts) {
@@ -768,11 +771,11 @@ static void c_can_do_tx(struct net_device *dev)
  * raced with the hardware or failed to readout all upper
  * objects in the last run due to quota limit.
  */
-static u32 c_can_adjust_pending(u32 pend)
+static u32 c_can_adjust_pending(struct c_can_priv *priv, u32 pend)
 {
 	u32 weight, lasts;
 
-	if (pend == RECEIVE_OBJECT_BITS)
+	if (pend == priv->obj.recv_mask)
 		return pend;
 
 	/*
@@ -874,7 +877,7 @@ static int c_can_do_rx_poll(struct net_device *dev)
 	 * It is faster to read only one 16bit register. This is only possible
 	 * for a maximum number of 16 objects.
 	 */
-	BUILD_BUG_ON_MSG(C_CAN_MSG_OBJ_RX_LAST > 16,
+	WARN_ONCE(priv->obj.recv_last > 16,
 			"Implementation does not support more message objects than 16");
 
 	for (;;) {
@@ -886,7 +889,7 @@ static int c_can_do_rx_poll(struct net_device *dev)
 			 * If the pending field has a gap, handle the
 			 * bits above the gap first.
 			 */
-			toread = c_can_adjust_pending(pend);
+			toread = c_can_adjust_pending(priv, pend);
 		} else {
 			toread = pend;
 		}
@@ -1201,12 +1204,17 @@ static int c_can_close(struct net_device *dev)
 	return 0;
 }
 
-struct net_device *alloc_c_can_dev(void)
+struct net_device *alloc_c_can_dev(int type, int object_count)
 {
 	struct net_device *dev;
 	struct c_can_priv *priv;
+	int send_object_count;
 
-	dev = alloc_candev(sizeof(struct c_can_priv), C_CAN_MSG_OBJ_TX_NUM);
+	if (!object_count || object_count > c_can_obj_counts[type])
+		object_count = c_can_obj_counts[type];
+	send_object_count = object_count/2;
+
+	dev = alloc_candev(sizeof(struct c_can_priv), send_object_count);
 	if (!dev)
 		return NULL;
 
@@ -1219,6 +1227,16 @@ struct net_device *alloc_c_can_dev(void)
 	priv->can.ctrlmode_supported = CAN_CTRLMODE_LOOPBACK |
 					CAN_CTRLMODE_LISTENONLY |
 					CAN_CTRLMODE_BERR_REPORTING;
+
+	priv->type = type;
+	priv->obj.count = object_count;
+	priv->obj.send_count = send_object_count;
+	priv->obj.recv_count = object_count - send_object_count;
+	priv->obj.recv_frst = 1;
+	priv->obj.recv_last = priv->obj.recv_frst + priv->obj.recv_count - 1;
+	priv->obj.send_frst = priv->obj.recv_last + 1;
+	priv->obj.send_last = priv->obj.send_frst + priv->obj.send_count - 1;
+	priv->obj.recv_mask = (1ULL << priv->obj.recv_count) - 1;
 
 	return dev;
 }
@@ -1331,7 +1349,7 @@ int register_c_can_dev(struct net_device *dev)
 	dev->netdev_ops = &c_can_netdev_ops;
 
 	err = can_rx_offload_add_manual(dev, &priv->offload,
-					C_CAN_OFFLOAD_WEIGHT);
+			priv->obj.recv_count*2 + priv->obj.send_count + 16);
 	if (err)
 		goto register_exit_runtime_disable;
 
