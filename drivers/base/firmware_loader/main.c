@@ -579,6 +579,7 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
 		goto out;
 	}
 
+	dev_info(device, "request firmware '%s'\n", name);
 	ret = _request_firmware_prepare(&fw, name, device, buf, size,
 					opt_flags);
 	if (ret <= 0) /* error or already assigned */
