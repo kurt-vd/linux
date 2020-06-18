@@ -33,6 +33,12 @@ EXPORT_SYMBOL(raid6_empty_zero_page);
 struct raid6_calls raid6_call;
 EXPORT_SYMBOL_GPL(raid6_call);
 
+/* allow kernel parameter to select algorithm */
+static char *algo_preset;
+module_param(algo_preset, charp, 0644);
+MODULE_PARM_DESC(algo_preset,
+		"preset the raid6 algorithm and skip boot delay");
+
 const struct raid6_calls * const raid6_algos[] = {
 #if defined(__ia64__)
 	&raid6_intx16,
@@ -134,6 +140,23 @@ static inline const struct raid6_recov_calls *raid6_choose_recov(void)
 	const struct raid6_recov_calls *const *algo;
 	const struct raid6_recov_calls *best;
 
+	if (algo_preset) {
+		/* honor module parameter preset */
+		for (algo = raid6_recov_algos; *algo; ++algo) {
+			if (strcmp(algo_preset, (*algo)->name))
+				continue;
+			if ((*algo)->valid && !(*algo)->valid())
+				continue;
+
+			/* select this one ... */
+			raid6_2data_recov = (*algo)->data2;
+			raid6_datap_recov = (*algo)->datap;
+
+			pr_info("raid6: %s recovery algorithm\n", (*algo)->name);
+			return *algo;
+		}
+	}
+
 	for (best = NULL, algo = raid6_recov_algos; *algo; algo++)
 		if (!best || (*algo)->priority > best->priority)
 			if (!(*algo)->valid || (*algo)->valid())
@@ -157,6 +180,22 @@ static inline const struct raid6_calls *raid6_choose_gen(
 	int start = (disks>>1)-1, stop = disks-3;	/* work on the second half of the disks */
 	const struct raid6_calls *const *algo;
 	const struct raid6_calls *best;
+
+	if (algo_preset) {
+		/* honor module parameter preset */
+		for (algo = raid6_algos; *algo; ++algo) {
+			if (strcmp(algo_preset, (*algo)->name))
+				continue;
+			if ((*algo)->valid && !(*algo)->valid())
+				continue;
+
+			/* select this one ... */
+			raid6_call = **algo;
+			pr_info("raid6: selected algorithm %s\n", (*algo)->name);
+			return *algo;
+		}
+		pr_err("raid6: algorithm %s not supported\n", (*algo)->name);
+	}
 
 	for (bestgenperf = 0, bestxorperf = 0, best = NULL, algo = raid6_algos; *algo; algo++) {
 		if (!best || (*algo)->prefer >= best->prefer) {
